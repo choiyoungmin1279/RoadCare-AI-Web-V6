@@ -1,0 +1,19 @@
+{
+  "data_type": "ACTUAL_MODEL",
+  "model_name": "SSDLite-MobileNetV3-Large",
+  "backbone": "MobileNetV3-Large",
+  "detector": "SSDLite320",
+  "best_epoch": 12,
+  "weight_file": "best_weight.pt",
+  "input_size": "320x320",
+  "confidence_threshold": 0.25,
+  "precision": 0.4906,
+  "recall": 0.32,
+  "f1": 0.3873,
+  "map50": 0.3504,
+  "map50_95": 0.1676,
+  "fps": 20.75,
+  "latency_ms": 48.2,
+  "model_size_mb": 8.77,
+  "selection_reason": "ACTUAL_MODEL: SSDLite-MobileNetV3-Large (MobileNetV3-Large) validation best weight."
+}
