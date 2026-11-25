@@ -8,7 +8,7 @@ from risk_ml import ranking, insights, forecast, grade
 from cloud_link import settings,get,put,original_created_at
 
 ROOT=Path(__file__).resolve().parent
-st.set_page_config(page_title='RoadCare AI | Web V15',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
+st.set_page_config(page_title='RoadCare AI | Web V17',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
 st.markdown("""<style>
 .stApp{background:#eaf3f9;color:#102b43}.block-container{max-width:1900px;padding:1.4rem 1.5rem 2rem}.hero{background:linear-gradient(100deg,#f7fbff 0%,#e3f2f8 42%,#123e54 100%);color:#102b43;padding:18px 22px;border-radius:12px;display:flex;align-items:center;gap:20px;min-height:92px;overflow:hidden}.hero h1{color:#102b43!important;font-size:34px;margin:0;padding:0}.hero em{color:#087f87;font-style:normal}.hero span{color:#284b63;font-weight:600}.hero img{width:32%;height:76px;object-fit:cover;border-radius:8px;margin-left:auto}.hero .tag{color:white;font-size:12px;white-space:nowrap}h1,h2,h3{color:#102b43}[data-testid=stHeader]{background:transparent}[data-testid=stSidebar]{background:linear-gradient(155deg,#102b43,#0b354b 75%,#07556a);min-width:235px}[data-testid=stSidebar] *{color:#f0f8ff!important}[data-testid=stSidebar] [data-testid=stRadio] label{padding:12px 9px;border-radius:8px;cursor:pointer}[data-testid=stSidebar] [data-testid=stRadio] label:has(input:checked){background:#087eae}[data-testid=stSidebar] [data-testid=stRadio] [role=radiogroup]{gap:8px}[data-testid=stSidebar] button{background:#16475d;border-color:#42687b}[data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d5e5ef!important;border-radius:13px!important;background:#fafdff;box-shadow:0 3px 10px #123e5410}[data-testid=stMetric]{background:#eaf3f9;border:1px solid #d8e6ef;border-radius:9px;padding:10px}[data-testid=stMetricValue]{color:#102b43;font-size:24px}[data-testid=stMetricLabel]{font-size:12px}.stButton button,.stDownloadButton button{border-radius:8px}button[kind=primary]{background:#087da7!important;border-color:#087da7!important;color:white!important}.listhead{background:#dcecf5;padding:7px;border-radius:6px;font-weight:700;font-size:12px}.status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:normal}.stCaption{color:#52657c}.section-title{font-size:25px;font-weight:800;color:#102b43;margin:8px 0}.section-title small{font-size:13px;font-weight:400;color:#52657c;margin-left:12px}@media(max-width:700px){.hero{display:block;padding:12px}.hero h1{font-size:25px}.hero img,.hero .tag{display:none}.block-container{padding:1rem!important}}
 </style>""",unsafe_allow_html=True)
@@ -105,7 +105,7 @@ def obj(path):return json.loads(read(path))
 slots=['model_1','model_2','model_3']
 infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8'))
 header_img=base64.b64encode((ROOT/'data/header_road.jpg').read_bytes()).decode('ascii')
-st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V15</div></div>',unsafe_allow_html=True)
+st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V17</div></div>',unsafe_allow_html=True)
 from datetime import datetime, timezone
 @st.fragment(run_every=2)
 def catalog_watch():
@@ -230,26 +230,46 @@ if st.session_state.get('road_segment') not in road_ids:
     st.session_state['road_segment']=seg if seg in road_ids else road_ids[0]
 
 def map_figure(selected, focus):
-    fig=go.Figure()
-    cols=6; rows=(len(road_ids)+cols-1)//cols
-    # Schematic city blocks, river and local streets; coordinates are fictional.
-    for j in range(rows+1):
-        for i in range(cols+1):
-            x=i*2; y=j*2
-            fig.add_shape(type='rect',x0=x+.18,x1=x+1.65,y0=y+.2,y1=y+1.35,fillcolor='#dce7d5' if (i+j)%4==0 else '#e4e2db',line=dict(color='white',width=1),layer='below')
-    fig.add_shape(type='rect',x0=-.5,x1=cols*2+.5,y0=-.8,y1=-.3,fillcolor='#a7d6e9',line_width=0,layer='below')
-    for j in range(rows):
-        fig.add_shape(type='line',x0=-.2,x1=cols*2,y0=j*2+1.6,y1=j*2+1.6,line=dict(color='white',width=13),layer='below')
-    for i in range(cols+1):
-        fig.add_shape(type='line',x0=i*2,x1=i*2,y0=0,y1=rows*2,line=dict(color='white',width=9),layer='below')
+    import math, random
+    fig=go.Figure(); rng=random.Random(46)
+    # Fictional city plan: curving river, irregular streets and building footprints.
+    def polygon(points, color, outline=None):
+        fig.add_trace(go.Scatter(x=[p[0] for p in points]+[points[0][0]],y=[p[1] for p in points]+[points[0][1]],fill='toself',mode='lines',line=dict(color=outline or color,width=0.7),fillcolor=color,hoverinfo='skip',showlegend=False))
+    def street(points,width=5,major=False):
+        for color,w in [('#c9c6bd',width+2),('#fffdf8' if not major else '#f8e6b6',width)]:
+            fig.add_trace(go.Scatter(x=[p[0] for p in points],y=[p[1] for p in points],mode='lines',line=dict(color=color,width=w,shape='spline',smoothing=.65),hoverinfo='skip',showlegend=False))
+    polygon([(0,8),(2,9),(4,8.7),(5,10),(0,10)],'#c8dfbb')
+    polygon([(10,0),(14,0),(14,3),(12,2.5),(10,1.4)],'#c8dfbb')
+    polygon([(5,4),(6.8,4.3),(7.4,5.6),(6.2,6.2),(4.9,5.4)],'#c9dfba')
+    river=[(0,2.1),(2,2.5),(4,1.8),(6,1.2),(8,1.7),(10,3.0),(12,3.4),(14,2.9)]
+    polygon([(x,y+.42) for x,y in river]+[(x,y-.42) for x,y in reversed(river)],'#a5d4e8')
+    # Six irregular corridors, each divided into five contiguous management segments.
+    corridors=[[(.5,8.2),(2.5,7.7),(4.8,8.2),(7.2,7.5),(10,8.4),(13.5,8.0)],[(.4,6.5),(2.6,6.8),(4.7,6.3),(7.4,6.8),(10.3,6.1),(13.6,6.6)],[(.5,4.3),(2.8,4.8),(4.7,4.0),(7.6,4.5),(10.1,4.8),(13.5,4.2)],[(.5,.8),(2.9,1.0),(5.1,.5),(7.8,.6),(10.4,1.2),(13.5,1.0)],[(2.5,9.7),(2.5,7.7),(2.6,6.8),(2.8,4.8),(2.5,2.4),(2.9,1.0)],[(10.7,9.7),(10,8.4),(10.3,6.1),(10.1,4.8),(10.4,3.1),(10.4,1.2)]]
+    # Building clusters follow neighborhood blocks, avoiding river and primary corridors.
+    def dist(x,y,a,b):
+        dx=b[0]-a[0];dy=b[1]-a[1];t=max(0,min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy or 1)));return math.hypot(x-a[0]-t*dx,y-a[1]-t*dy)
+    edges=[(a,b) for path in corridors+[river] for a,b in zip(path,path[1:])]
+    for _ in range(280):
+        x=rng.uniform(.3,13.7);y=rng.uniform(.3,9.7)
+        if min(dist(x,y,a,b) for a,b in edges)<.46 or (5<x<7.4 and 4<y<6.2) or (x<4 and y>8.7):continue
+        w=rng.uniform(.10,.32);h=rng.uniform(.09,.25); angle=rng.uniform(-.25,.25)
+        pts=[(x+u*math.cos(angle)-v*math.sin(angle),y+u*math.sin(angle)+v*math.cos(angle)) for u,v in [(-w,-h),(w,-h),(w,h),(-w,h)]]
+        polygon(pts,rng.choice(['#ded9d0','#e5dfd5','#d6d3cc']),'#f7f5ef')
+    for x in [1.2,4.2,6.8,8.7,12.2]:
+        street([(x,9.7),(x+.3,8.1),(x-.2,6.6),(x+.35,4.4),(x+.1,3.7)],3)
+    for y in [5.5,7.4,9.1]:street([(.2,y),(3,y+.2),(6,y-.25),(9,y+.15),(13.8,y-.1)],3)
+    for path in corridors:street(path,11,True)
     colors={'관찰':'#269447','주의':'#d7a000','우선 점검':'#e87924','즉시 점검 권고':'#c62838'}
-    centers={}
+    segments=[(a,b) for path in corridors for a,b in zip(path,path[1:])];centers={}
     for k,sid in enumerate(road_ids):
-        x=(k%cols)*2; y=(rows-1-k//cols)*2+1.6; centers[sid]=(x+1,y)
-        r=ranks.loc[ranks.segment_id.astype(str)==sid].iloc[0]; c=colors.get(r.grade,'#64748b'); active=sid==selected
-        fig.add_trace(go.Scatter(x=[x+.12,x+.55,x+1,x+1.45,x+1.88],y=[y,y+.07,y,y-.07,y],mode='lines+markers+text',line=dict(color=c,width=13 if active else 7),marker=dict(size=[5,5,16 if active else 10,5,5],color=c,line=dict(color='white',width=1)),text=['','',sid,'',''],textposition='top center',textfont=dict(size=13 if active else 10,color='#102b43'),customdata=[sid]*5,hovertemplate=sid+' · '+str(r.grade)+' · '+f'{r.risk_score:.1f}/100<extra></extra>',showlegend=False,opacity=1 if active else .72))
+        a,b=segments[k%len(segments)]; x=(a[0]+b[0])/2;y=(a[1]+b[1])/2;centers[sid]=(x,y)
+        r=ranks.loc[ranks.segment_id.astype(str)==sid].iloc[0];c=colors.get(r.grade,'#64748b');active=sid==selected
+        if active:fig.add_trace(go.Scatter(x=[a[0],b[0]],y=[a[1],b[1]],mode='lines',line=dict(color='#173b55',width=15),hoverinfo='skip',showlegend=False))
+        fig.add_trace(go.Scatter(x=[a[0],x,b[0]],y=[a[1],y,b[1]],mode='lines+markers+text',line=dict(color=c,width=9 if active else 5),marker=dict(size=[0,13 if active else 7,0],color=c,line=dict(color='white',width=1)),text=['',sid,''],textposition='top center',textfont=dict(size=12 if active else 9,color='#173b55'),customdata=[sid]*3,hovertemplate=sid+' · '+str(r.grade)+' · '+f'{r.risk_score:.1f}/100<extra></extra>',showlegend=False))
+    for x,y,label in [(2,9.4,'북부공원'),(6.1,5.5,'중앙공원'),(8.4,2.5,'가람천'),(12.4,7.3,'상업지구'),(4.1,3.4,'주거지구')]:
+        fig.add_annotation(x=x,y=y,text=label,showarrow=False,font=dict(size=10,color='#64766b'))
     x,y=centers[selected]
-    fig.update_layout(height=440,margin=dict(l=5,r=5,t=10,b=5),paper_bgcolor='#f5f8fa',plot_bgcolor='#f1f0e9',dragmode='pan',clickmode='event+select',xaxis=dict(visible=False,range=[x-2.8,x+2.8] if focus else [-.5,cols*2+.5]),yaxis=dict(visible=False,range=[y-2.1,y+2.1] if focus else [-.9,rows*2+.2],scaleanchor='x',scaleratio=1),showlegend=False)
+    fig.update_layout(height=510,margin=dict(l=4,r=4,t=8,b=4),paper_bgcolor='#f5f8fa',plot_bgcolor='#f1eee5',dragmode='pan',clickmode='event+select',xaxis=dict(visible=False,range=[x-3.2,x+3.2] if focus else [0,14]),yaxis=dict(visible=False,range=[y-2.8,y+2.8] if focus else [0,10],scaleanchor='x',scaleratio=1),showlegend=False)
     return fig
 
 def map_pick():
@@ -263,12 +283,19 @@ control,map_button=st.columns([3,1])
 with control:
     seg=st.selectbox('도로 구간 (전체 화면 공통)',road_ids,key='road_segment')
 with map_button:
-    with st.popover('🗺 도로 구간 지도',use_container_width=True):
+    if 'road_map_open' not in st.session_state: st.session_state['road_map_open']=False
+    def toggle_road_map():
+        st.session_state['road_map_open']=not st.session_state['road_map_open']
+    st.button('🗺 지도 닫기' if st.session_state['road_map_open'] else '🗺 도로 구간 지도',key='road_map_toggle',on_click=toggle_road_map,use_container_width=True)
+if st.session_state['road_map_open']:
+    st.markdown("""<style>[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .road-map-anchor){position:fixed;right:2rem;top:9rem;width:min(650px,90vw);max-height:75vh;overflow:auto;z-index:900;background:#f5f8fa;border:1px solid #b5cbd7;border-radius:14px;padding:16px;box-shadow:0 8px 32px #173b5533;} @media(max-width:700px){[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .road-map-anchor){right:2vw;top:8rem;width:96vw;max-height:70vh;}}</style>""",unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown('<span class="road-map-anchor"></span>',unsafe_allow_html=True)
         st.markdown('### 도로 구간 위치 · 가상 지도')
         st.caption('실제 지리 좌표가 아닌 기능 테스트용 지도 · '+str(len(road_ids))+'개 구간')
-        focus=st.toggle('선택 구간 자동 확대',value=True,key='road_map_focus')
+        focus=st.toggle('선택 구간 자동 확대',value=False,key='road_map_focus')
         st.plotly_chart(map_figure(seg,focus),key='road_map_chart',on_select=map_pick,selection_mode='points',use_container_width=True,config={'scrollZoom':True,'displaylogo':False})
-        st.caption('도로 중앙의 점을 클릭하면 구간 선택 · 드래그 이동 · 휠 확대/축소 · 팝업 밖 클릭으로 닫기')
+        st.caption('도로 중앙의 점을 클릭하면 구간 선택 · 드래그 이동 · 휠 확대/축소 · 상단 지도 버튼으로만 닫기')
         st.caption('🟢 관찰 (30 미만) · 🟡 주의 (30–60 미만) · 🟠 우선 점검 (60–80 미만) · 🔴 즉시 점검 권고 (80 이상)')
         selected_row=ranks.loc[ranks.segment_id.astype(str)==seg].iloc[0]
         st.write(f'**{seg}** · {selected_row.grade} · Risk {selected_row.risk_score:.1f}/100 · 순위 {int(selected_row["rank"])} / {len(road_ids)}')
