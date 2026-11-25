@@ -8,13 +8,15 @@ from risk_ml import ranking, insights, forecast, grade
 from cloud_link import settings,get,put,original_created_at
 
 ROOT=Path(__file__).resolve().parent
-st.set_page_config(page_title='RoadCare AI | Web V10',page_icon='🛣️',layout='wide')
-st.markdown('''<style>.hero{background:#102b49;color:white;padding:22px 28px;border-radius:16px;margin-bottom:18px}.hero h1,.hero p{color:white!important}.hero small{color:#8ee0d9;letter-spacing:2px}.stRadio [role=radiogroup]{gap:16px;flex-wrap:wrap} .stApp{background:#F4F7FB;color:#17324D}section[data-testid="stSidebar"]{background:#102B49}section[data-testid="stSidebar"] *{color:#f5f8fc!important}div[data-testid="stMetric"]{background:#fff;border:1px solid #e0eaf2;padding:13px;border-radius:12px}h1,h2,h3{color:#17324D} .stApp [data-testid="stMain"]{color:#17324D} .stApp [data-testid="stMain"] label,.stApp [data-testid="stMain"] p{color:#17324D} [data-testid="stMetricValue"]{color:#17324D} [data-baseweb="select"] > div{background:#fff;color:#17324D} [data-testid="stHeader"]{background:#F4F7FB}</style>''',unsafe_allow_html=True)
+st.set_page_config(page_title='RoadCare AI | Web V11',page_icon='🛣️',layout='wide')
+st.markdown("""<style>
+.stApp{background:#eaf1f8;color:#10213b}.block-container{max-width:1800px;padding:1rem 1.1rem 2rem}.hero{background:#10213b;color:white;padding:12px 20px;border-radius:12px;margin-bottom:4px;display:flex;align-items:center;gap:24px}.hero h1{color:white!important;font-size:32px;margin:0;padding:0}.hero span{color:#e1edf7}.hero em{color:#00b9bb;font-style:normal} [data-testid=stHeader]{background:transparent;height:0} [data-testid=stToolbar]{display:none} [data-testid=stSidebar]{display:none} h1,h2,h3{color:#10213b} [data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d2e0ed!important;border-radius:14px!important;background:white;box-shadow:0 3px 9px #10213b12} [data-testid=stMetric]{background:#edf5fa;border-radius:9px;padding:8px} [data-testid=stMetricValue]{color:#10213b;font-size:25px} [data-testid=stMetricLabel]{font-size:12px} [data-testid=stRadio] [role=radiogroup]{display:flex;flex-wrap:wrap;gap:8px;background:white;padding:8px;border-radius:12px} [data-testid=stRadio] label{flex:1;white-space:normal} button[kind=primary]{background:#009fa5!important;border-color:#009fa5!important;color:white!important} .stButton button{border-radius:9px} .st-key-nav [data-testid=stRadio] label{font-weight:700} .listhead{background:#dceafa;padding:7px;border-radius:7px;font-weight:700;font-size:13px} .status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:nowrap} .stCaption{color:#52657c} @media(max-width:700px){.hero{display:block}.hero h1{font-size:25px}}
+</style>""",unsafe_allow_html=True)
 
 def get_df(upload,path):
     return pd.read_csv(upload if upload is not None else ROOT/path)
 def download(label,df,name):st.download_button(label,df.to_csv(index=False).encode('utf-8-sig'),name,mime='text/csv')
-def plot(fig):st.plotly_chart(fig.update_layout(colorway=['#087f87','#62b9b8','#2563eb','#102b49','#e5a34b'],margin=dict(l=20,r=20,t=55,b=20)),use_container_width=True)
+def plot(fig):st.plotly_chart(fig.update_layout(colorway=['#009fa5','#ff902d','#2563eb','#10213b','#e55353'],margin=dict(l=12,r=12,t=45,b=12),height=260,paper_bgcolor='#ffffff',plot_bgcolor='#ffffff'),use_container_width=True)
 def source_tag(label):st.caption('데이터 출처: '+label)
 def video_data(upload,path):
     if upload is None:return (ROOT/path).read_bytes()
@@ -70,7 +72,7 @@ def read(path):return fetch(path,settings()[0:3:2])
 def obj(path):return json.loads(read(path))
 slots=['model_1','model_2','model_3']
 infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8'))
-st.markdown('<div class="hero"><small>ROAD INTELLIGENCE / WEB</small><h1>RoadCare AI</h1><p>실시간 도로 영상 모니터링 · 유지관리 의사결정</p></div>',unsafe_allow_html=True)
+st.markdown('<div class="hero"><h1>🛣 RoadCare <em>AI</em></h1><span>AI 기반 도로 위험요소 분석 플랫폼</span></div>',unsafe_allow_html=True)
 from datetime import datetime, timezone
 @st.fragment(run_every=2)
 def catalog_watch():
@@ -104,8 +106,8 @@ if mode=='모바일':
 elif mode=='자동':
     st.markdown('<style>@media(max-width:700px){[data-testid="stHorizontalBlock"]{flex-wrap:wrap!important}[data-testid="stColumn"]{min-width:100%!important;flex:1 1 100%!important} [data-testid="stExpander"] [data-testid="stHorizontalBlock"]{flex-wrap:nowrap!important} [data-testid="stExpander"] [data-testid="stColumn"]{min-width:0!important;flex:1 1 0!important} [data-testid="stExpander"] [data-testid="stColumn"]:first-child{flex:6 1 0!important}.block-container{padding:1rem!important}}</style>',unsafe_allow_html=True)
 st.markdown('<style>[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none} .stButton button{border-radius:9px} [data-testid="stRadio"] label{white-space:normal} .hero{background:#102b49} </style>',unsafe_allow_html=True)
+page=st.radio('화면 선택',['영상 분석','도로 위험도·우선순위','월별 변화·보수효과','Intelligent Insight','AI 모델 성능'],horizontal=True,label_visibility='collapsed',key='nav')
 model_id=st.segmented_control('AI 모델 (전체 화면 공통)',slots,format_func=lambda m:dict(zip(slots,['SSDLite','YOLO11n','RT-DETR']))[m],default=slots[0],key='model_choice') or slots[0]
-page=st.radio('화면 선택',['영상 분석','도로 위험도·우선순위','월별 변화·보수효과','Intelligent Insight','AI 모델 성능'],horizontal=True,label_visibility='collapsed')
 ids=[r['id'] for r in records if 'id' in r]
 @st.cache_data(ttl=10,show_spinner=False)
 def alias_for(rid,scope):
@@ -116,39 +118,57 @@ def status_label(r):
     status=r.get('models',{}).get(model_id,'대기 중')
     return {'분석 완료':'🟢 ✓ 분석 완료','분석 중':'🔄 분석 중','분석 실패':'🔴 ✕ 분석 실패'}.get(status,'⚪ '+status)
 if ids and st.session_state.get('selected_run') not in ids:st.session_state['selected_run']=ids[0]
-if page=='영상 분석':
-    selected_label=next((display_name(r) for r in records if r['id']==st.session_state.get('selected_run')), '영상 없음')
-    with st.expander('영상 선택 · '+selected_label+' ('+str(len(records))+'개)',expanded=False):
-        if not records:st.caption('로컬 전송 대기')
-        for r in records:
-            rid=r['id']; name=display_name(r)
-            a,b,c=st.columns([6,1,1])
-            if a.button(name+'  ·  '+status_label(r),key='pick_'+rid,use_container_width=True,type='primary' if rid==st.session_state.get('selected_run') else 'secondary'):
-                st.session_state['selected_run']=rid;st.rerun()
-            with b:
-                with st.popover('✎',help='영상 이름 수정'):
-                    new=st.text_input('표시 이름',name,key='alias_'+rid,max_chars=150)
-                    if st.button('저장',key='save_'+rid,disabled=not new.strip()):
-                        try:
-                            put('web_metadata/'+rid+'.json',json.dumps({'display_name':new.strip()},ensure_ascii=False).encode(),'application/json');alias_for.clear();st.rerun()
-                        except Exception:st.error('이름 저장 실패 · 연결 확인')
-            with c:
-                with st.popover('ⓘ',help='영상 정보'):
-                    st.write(name)
-                    if st.button('정보 조회',key='meta_'+rid):
-                        try:
-                            import tempfile, subprocess, imageio_ffmpeg,re
-                            with tempfile.NamedTemporaryFile(suffix='.mp4') as f:
-                                f.write(read('runs/'+rid+'/original.mp4'));f.flush()
-                                proc=subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(),'-i',f.name],capture_output=True,text=True,timeout=30)
-                                match=re.search(r'Duration: (\d+:\d+:\d+(?:\.\d+)?)',proc.stderr)
-                            duration=match.group(1).split('.')[0] if match else '확인 불가'
-                        except Exception:duration='확인 불가'
-                        try:created=original_created_at(rid)
-                        except Exception:created='확인 불가'
-                        st.session_state['meta_'+rid+'_value']=(duration,created)
-                    duration,created=st.session_state.get('meta_'+rid+'_value',('정보 조회 버튼을 눌러주세요','정보 조회 버튼을 눌러주세요'))
-                    st.write('총 영상 길이: '+duration);st.write('추가된 날짜: '+created)
+
+import html as html_lib
+@st.cache_data(ttl=45,show_spinner=False,max_entries=100)
+def row_summary(rid,mid,scope):
+    try:
+        data=json.loads(get(f'runs/{rid}/{mid}/results.json'))
+        d=pd.DataFrame(data.get('detections',[]))
+        return data.get('summary',{}).get('current_cycle_unique_count',len(d)), ', '.join(d['class_name'].astype(str).value_counts().index[:3]) if 'class_name' in d else '—'
+    except Exception:return '—','—'
+def list_panel():
+    st.markdown('### 분석 영상 목록 (총 '+str(len(records))+'개)')
+    if not records:st.caption('로컬 전송 대기');return
+    widths=[.5,2.6,1.5,.8,1.4,1.1,1.7,.55,.55]
+    for col,label in zip(st.columns(widths),['번호','영상 파일명','분석 상태','손상 개수','주요 손상','영상 길이','업로드 일시','수정','정보']):
+        col.markdown('<div class="listhead">'+label+'</div>',unsafe_allow_html=True)
+    for i,r in enumerate(records,1):
+        rid=r['id']; name=display_name(r); status=r.get('models',{}).get(model_id,'대기 중')
+        n,classes=row_summary(rid,model_id,settings()[0:3:2]) if status=='분석 완료' else ('—','—')
+        duration,created=st.session_state.get('meta_'+rid+'_value',(r.get('duration','—'),r.get('created_at','—')))
+        num,a,state,count,kind,length,date,b,c=st.columns(widths)
+        num.write(i)
+        if a.button('▶ '+name,key='pick_'+rid,use_container_width=True,type='primary' if rid==st.session_state.get('selected_run') else 'secondary'):
+            st.session_state['selected_run']=rid;st.rerun()
+        fg,bg={'분석 완료':('#087b38','#dcfce7'),'분석 중':('#1559c0','#dbeafe'),'분석 실패':('#b91c1c','#fee2e2')}.get(status,('#475569','#e2e8f0'))
+        state.markdown(f'<span class="status" style="color:{fg};background:{bg}">{html_lib.escape(status_label(r))}</span>',unsafe_allow_html=True)
+        count.write(str(n));kind.write(classes);length.write(str(duration));date.write(str(created))
+        with b:
+            with st.popover('✎',help='영상 이름 수정'):
+                new=st.text_input('표시 이름',name,key='alias_'+rid,max_chars=150)
+                if st.button('저장',key='save_'+rid,disabled=not new.strip()):
+                    try:
+                        put('web_metadata/'+rid+'.json',json.dumps({'display_name':new.strip()},ensure_ascii=False).encode(),'application/json');alias_for.clear();st.rerun()
+                    except Exception:st.error('이름 저장 실패 · 연결 확인')
+        with c:
+            with st.popover('ⓘ',help='영상 정보'):
+                st.write(name)
+                if st.button('정보 조회',key='meta_'+rid):
+                    try:
+                        import tempfile, subprocess, imageio_ffmpeg,re
+                        with tempfile.NamedTemporaryFile(suffix='.mp4') as f:
+                            f.write(read('runs/'+rid+'/original.mp4'));f.flush()
+                            proc=subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(),'-i',f.name],capture_output=True,text=True,timeout=30)
+                            match=re.search(r'Duration: (\d+:\d+:\d+(?:\.\d+)?)',proc.stderr)
+                        duration=match.group(1).split('.')[0] if match else '확인 불가'
+                    except Exception:duration='확인 불가'
+                    try:created=original_created_at(rid)
+                    except Exception:created='확인 불가'
+                    st.session_state['meta_'+rid+'_value']=(duration,created)
+                duration,created=st.session_state.get('meta_'+rid+'_value',('정보 조회 버튼을 눌러주세요','정보 조회 버튼을 눌러주세요'))
+                st.write('총 영상 길이: '+duration);st.write('추가된 날짜: '+created)
+
 chosen=st.session_state.get('selected_run') if ids else None
 rec=next((r for r in records if r.get('id')==chosen),None)
 seg=rec.get('segment','R-001') if rec else st.selectbox('도로 구간',[f'R-{i:03d}' for i in range(1,31)])
@@ -168,7 +188,9 @@ try:
 except Exception as e:st.error(f'데이터 로딩 오류: {e}');st.stop()
 
 if page=='영상 분석':
-    st.subheader('원본 영상 / AI 분석 영상')
+    main,side=st.columns([2.15,1],gap='small')
+    with main:
+        st.markdown('### 원본 영상 / AI 분석 영상')
     if rec:st.caption(display_name(rec)+' · '+status_label(rec))
     left=right=None
     if chosen:
@@ -177,10 +199,11 @@ if page=='영상 분석':
         if ready:
             try:right=read(work+'/result.mp4')
             except Exception:st.caption('분석 영상 수신 대기')
-    player_html(left,right,mode)
+    with main:
+        with st.container(border=True):player_html(left,right,mode)
     if not chosen:st.info('로컬에서 전송된 영상이 없습니다.')
     @st.fragment(run_every=2)
-    def live_panel():
+    def live_panel(part):
         data=result if ready else None
         status=rec.get('models',{}).get(model_id,'대기 중') if rec else '대기 중'
         if work and (status=='분석 중' or (status=='분석 완료' and not ready)):
@@ -188,7 +211,7 @@ if page=='영상 분석':
                 candidate=json.loads(get(work+'/live.json'))
                 if candidate.get('model')==model_id and candidate.get('status') in ('analyzing','complete'): data=candidate
             except Exception: st.caption('중간 데이터 수신 대기 또는 연결 오류')
-        st.subheader('실시간 분석 현황')
+        if part=='summary':st.markdown('### 분석 요약')
         st.caption(status+' · '+infos[model_id]['model_name'])
         if data is None:
             st.info('선택한 영상과 모델의 분석 데이터가 아직 없습니다.');return
@@ -199,8 +222,14 @@ if page=='영상 분석':
         d=pd.DataFrame(data.get('detections',[])); summary=data.get('summary',{})
         conf=pd.to_numeric(d.get('confidence',pd.Series(dtype=float)),errors='coerce'); area=pd.to_numeric(d.get('relative_area',pd.Series(dtype=float)),errors='coerce')
         def fmt(x):return f'{x:.4f}' if pd.notna(x) else '—'
-        for col,(label,value) in zip(st.columns(4),[('누적 탐지 이벤트',summary.get('cumulative_detection_events','—')),('고유 Track',summary.get('current_cycle_unique_count','—')),('평균 Confidence',fmt(conf.mean())),('최대 Confidence',fmt(conf.max()))]):col.metric(label,value)
-        for col,(label,value) in zip(st.columns(3),[('평균 Relative Area',fmt(area.mean())),('최대 Relative Area',fmt(area.max())),('Risk Score · 가상 데이터',f'{row.risk_score:.1f}')]):col.metric(label,value)
+        if part=='summary':
+            for col,(label,value) in zip(st.columns(2),[('누적 탐지 이벤트',summary.get('cumulative_detection_events','—')),('고유 Track',summary.get('current_cycle_unique_count','—'))]):col.metric(label,value)
+            for col,(label,value) in zip(st.columns(2),[('평균 Confidence',fmt(conf.mean())),('최대 Confidence',fmt(conf.max()))]):col.metric(label,value)
+            for col,(label,value) in zip(st.columns(3),[('평균 Relative Area',fmt(area.mean())),('최대 Relative Area',fmt(area.max())),('Risk Score · 가상 데이터',f'{row.risk_score:.1f}')]):col.metric(label,value)
+            if 'class_name' in d and not d.empty:
+                counts=d['class_name'].astype(str).value_counts().rename_axis('손상 유형').reset_index(name='Track')
+                plot(px.pie(counts,names='손상 유형',values='Track',hole=.65,title='위험요소 비율'))
+            return
         a,b,c=st.columns(3)
         with a:
             if conf.notna().any():plot(px.histogram(x=conf.dropna(),nbins=15,title='Confidence 분포'))
@@ -213,7 +242,22 @@ if page=='영상 분석':
                 plot(px.bar(counts,x='초',y='신규 Track',title='영상 시간별 신규 Track (2초)'))
         st.caption('Track별 최대 Confidence 및 상대 BBox 면적 기준. 실제 물리적 면적 또는 고유 포트홀 수가 아닙니다. 시간별 전체 이벤트는 V8에서 제공하지 않습니다.')
         with st.expander('탐지 상세 데이터'):st.dataframe(d,use_container_width=True)
-    live_panel()
+    with side:
+        with st.container(border=True):live_panel("summary")
+    with main:
+        with st.container(border=True):live_panel("charts")
+    bottom,details=st.columns([3,1],gap='small')
+    with bottom:
+        with st.container(border=True):list_panel()
+    with details:
+        with st.container(border=True):
+            st.markdown('### 영상 정보')
+            if rec:
+                st.write(display_name(rec))
+                duration,created=st.session_state.get('meta_'+chosen+'_value',(rec.get('duration','—'),rec.get('created_at','—')))
+                st.write('영상 길이: '+str(duration));st.write('업로드 일시: '+str(created))
+                st.caption('목록의 정보 버튼에서 상세 조회')
+            else:st.caption('선택된 영상 없음')
     if ready:
         st.write('실측 추론 FPS:',result.get('summary',{}).get('inference_fps','—'))
         st.download_button('결과 JSON',json.dumps(result,ensure_ascii=False).encode(),'results.json')
