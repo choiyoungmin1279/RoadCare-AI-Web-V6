@@ -8,7 +8,7 @@ from risk_ml import ranking, insights, forecast, grade
 from cloud_link import settings,get,put,original_created_at
 
 ROOT=Path(__file__).resolve().parent
-st.set_page_config(page_title='RoadCare AI | Web V20',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
+st.set_page_config(page_title='RoadCare AI | Web V21',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
 st.markdown("""<style>
 .stApp{background:#eaf3f9;color:#102b43}.block-container{max-width:1900px;padding:1.4rem 1.5rem 2rem}.hero{background:linear-gradient(100deg,#f7fbff 0%,#e3f2f8 42%,#123e54 100%);color:#102b43;padding:18px 22px;border-radius:12px;display:flex;align-items:center;gap:20px;min-height:92px;overflow:hidden}.hero h1{color:#102b43!important;font-size:34px;margin:0;padding:0}.hero em{color:#087f87;font-style:normal}.hero span{color:#284b63;font-weight:600}.hero img{width:32%;height:76px;object-fit:cover;border-radius:8px;margin-left:auto}.hero .tag{color:white;font-size:12px;white-space:nowrap}h1,h2,h3{color:#102b43}[data-testid=stHeader]{background:transparent}[data-testid=stSidebar]{background:linear-gradient(155deg,#102b43,#0b354b 75%,#07556a);min-width:235px}[data-testid=stSidebar] *{color:#f0f8ff!important}[data-testid=stSidebar] [data-testid=stRadio] label{padding:12px 9px;border-radius:8px;cursor:pointer}[data-testid=stSidebar] [data-testid=stRadio] label:has(input:checked){background:#087eae}[data-testid=stSidebar] [data-testid=stRadio] [role=radiogroup]{gap:8px}[data-testid=stSidebar] button{background:#16475d;border-color:#42687b}[data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d5e5ef!important;border-radius:13px!important;background:#fafdff;box-shadow:0 3px 10px #123e5410}[data-testid=stMetric]{background:#eaf3f9;border:1px solid #d8e6ef;border-radius:9px;padding:10px}[data-testid=stMetricValue]{color:#102b43;font-size:24px}[data-testid=stMetricLabel]{font-size:12px}.stButton button,.stDownloadButton button{border-radius:8px}button[kind=primary]{background:#087da7!important;border-color:#087da7!important;color:white!important}.listhead{background:#dcecf5;padding:7px;border-radius:6px;font-weight:700;font-size:12px}.status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:normal}.stCaption{color:#52657c}.section-title{font-size:25px;font-weight:800;color:#102b43;margin:8px 0}.section-title small{font-size:13px;font-weight:400;color:#52657c;margin-left:12px}@media(max-width:700px){.hero{display:block;padding:12px}.hero h1{font-size:25px}.hero img,.hero .tag{display:none}.block-container{padding:1rem!important}}
 </style>""",unsafe_allow_html=True)
@@ -103,9 +103,13 @@ def fetch(path,scope):return get(path)
 def read(path):return fetch(path,settings()[0:3:2])
 def obj(path):return json.loads(read(path))
 slots=['model_1','model_2','model_3']
-infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8'))
+legacy_infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8'))
+def remote_registry():
+    data=json.loads(get('sync/model_registry_v21.json'))
+    if not isinstance(data,dict) or any(not isinstance(v,dict) for v in data.values()):raise ValueError('모델 목록 형식 오류')
+    return data
 header_img=base64.b64encode((ROOT/'data/header_road.jpg').read_bytes()).decode('ascii')
-st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V20</div></div>',unsafe_allow_html=True)
+st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V21</div></div>',unsafe_allow_html=True)
 from datetime import datetime, timezone
 @st.fragment(run_every=2)
 def catalog_watch():
@@ -113,7 +117,10 @@ def catalog_watch():
     try:
         current=json.loads(get('sync/catalog_v6.json'))
         if not isinstance(current,list): raise ValueError('목록 형식 오류')
-        if current != st.session_state.get('catalog',[]):
+        try: registry_now=remote_registry()
+        except Exception: registry_now=st.session_state.get('registry21')
+        if current != st.session_state.get('catalog',[]) or registry_now != st.session_state.get('registry21'):
+            st.session_state['registry21']=registry_now
             fetch.clear()
             st.session_state['catalog']=current
             st.rerun(scope='app')
@@ -132,6 +139,18 @@ if settings() and 'catalog' not in st.session_state:
         st.session_state['catalog']=records
     except Exception: pass
 if not settings(): st.warning('Streamlit Cloud Secrets 설정 필요')
+if settings() and st.session_state.get('registry21') is None:
+    try:st.session_state['registry21']=remote_registry()
+    except Exception:pass
+infos=st.session_state.get('registry21')
+if infos is None:infos=legacy_infos.copy()
+else:infos=infos.copy()
+for r in records:
+    for m,status in r.get('models',{}).items():
+        if status=='분석 완료' and m not in infos:infos[m]={'model_name':m,'archived':True,'enabled':False}
+slots=list(infos)
+if not slots:
+    infos={'no_model':{'model_name':'등록 모델 없음','enabled':False}};slots=list(infos)
 catalog_watch()
 mode=st.sidebar.radio('화면 모드',['자동','PC','모바일'],horizontal=True,key='display_mode')
 if mode=='모바일':
@@ -142,7 +161,10 @@ st.sidebar.markdown('## RoadCare AI')
 st.sidebar.caption('도로 유지관리 · WEB')
 page=st.sidebar.radio('화면 선택',['영상 분석','도로 위험도·우선순위','월별 변화·보수효과','Intelligent Insight','AI 모델 성능'],horizontal=False,label_visibility='collapsed',key='nav')
 st.markdown('<div class="section-title">'+page+'<small>AI 도로 유지관리 플랫폼</small></div>',unsafe_allow_html=True)
-model_id=st.segmented_control('AI 모델 (전체 화면 공통)',slots,format_func=lambda m:dict(zip(slots,['SSDLite','YOLO11n','RT-DETR']))[m],default=slots[0],key='model_choice') or slots[0]
+if st.session_state.get('model_choice') not in slots:st.session_state['model_choice']=slots[0]
+def model_label(m):
+    v=infos[m];return str(v.get('model_name',m))+(' · 보관 결과' if v.get('archived') else ' · 비활성' if v.get('enabled') is False and m!='no_model' else '')
+model_id=st.segmented_control('AI 모델 (전체 화면 공통)',slots,format_func=model_label,key='model_choice') or slots[0]
 ids=[r['id'] for r in records if 'id' in r]
 @st.cache_data(ttl=10,show_spinner=False)
 def alias_for(rid,scope):
@@ -214,7 +236,7 @@ rec=next((r for r in records if r.get('id')==chosen),None)
 seg=str(rec.get('segment','R-001')) if rec else 'R-001'
 work='runs/'+chosen+'/'+model_id if chosen else None
 ready=False;result={'data_type':'NO_RESULT','detections':[],'summary':{}}
-if work and rec.get('models',{}).get(model_id)=='분석 완료':
+if work and rec and rec.get('models',{}).get(model_id)=='분석 완료':
     try:result=obj(work+'/results.json');ready=True
     except Exception:pass
 sim=None
@@ -222,7 +244,7 @@ try:
     simulation=get_df(sim,'data/simulation.csv')
     required={'segment_id','month','pothole_count','avg_relative_area','max_relative_area','recurrence_count','traffic_volume','road_age_year','risk_score_before','risk_score_after'}
     if not required.issubset(simulation.columns):st.error('simulation.csv 필수 컬럼 누락: '+str(sorted(required-set(simulation.columns))));st.stop()
-    performance=pd.DataFrame([dict(model=v['model_name'],**{k:v.get(k) for k in ['precision','recall','f1','map50','map50_95','fps']}) for v in infos.values()]);info=infos.get(model_id,{})
+    performance=pd.DataFrame([dict(model=v.get('model_name',m),version=v.get('model_revision','미제공'),status=model_label(m),**{k:v.get(k) for k in ['precision','recall','f1','map50','map50_95','fps']}) for m,v in infos.items()]);info=infos.get(model_id,{})
     ranks=ranking(simulation)
     detections=pd.DataFrame(result.get('detections',[]))
 except Exception as e:st.error(f'데이터 로딩 오류: {e}');st.stop()
@@ -367,7 +389,7 @@ if page=='영상 분석':
             else:st.caption(status)
             return
         if part=='summary':st.markdown('### 분석 요약')
-        st.caption(status+' · '+infos[model_id]['model_name'])
+        st.caption(status+' · '+infos[model_id].get('model_name',model_id))
         if data is None:
             st.info('선택한 영상과 모델의 분석 데이터가 아직 없습니다.');return
         if data.get('progress') is not None: st.progress(max(0.,min(1.,float(data['progress']))),text='분석 진행률')
@@ -481,6 +503,7 @@ if page=='AI 모델 성능':
     a,b=st.columns(2)
     with a:plot(px.bar(performance,x='model',y=['precision','recall','f1','map50','map50_95'],barmode='group',title='제공된 검증 지표'))
     with b:plot(px.bar(performance,x='model',y='fps',title='제공된 FPS 비교'))
+    st.write('현재 모델 버전:',info.get('model_revision','미제공'))
     st.write('선정 근거:',info.get('selection_reason','미제공'))
     download('모델 비교 CSV',performance,'model_performance.csv')
 with st.expander('데이터 다운로드'):
