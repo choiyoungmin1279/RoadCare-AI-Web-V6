@@ -8,7 +8,7 @@ from risk_ml import ranking, insights, forecast, grade
 from cloud_link import settings,get,put,original_created_at
 
 ROOT=Path(__file__).resolve().parent
-st.set_page_config(page_title='RoadCare AI | Web V17',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
+st.set_page_config(page_title='RoadCare AI | Web V18',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
 st.markdown("""<style>
 .stApp{background:#eaf3f9;color:#102b43}.block-container{max-width:1900px;padding:1.4rem 1.5rem 2rem}.hero{background:linear-gradient(100deg,#f7fbff 0%,#e3f2f8 42%,#123e54 100%);color:#102b43;padding:18px 22px;border-radius:12px;display:flex;align-items:center;gap:20px;min-height:92px;overflow:hidden}.hero h1{color:#102b43!important;font-size:34px;margin:0;padding:0}.hero em{color:#087f87;font-style:normal}.hero span{color:#284b63;font-weight:600}.hero img{width:32%;height:76px;object-fit:cover;border-radius:8px;margin-left:auto}.hero .tag{color:white;font-size:12px;white-space:nowrap}h1,h2,h3{color:#102b43}[data-testid=stHeader]{background:transparent}[data-testid=stSidebar]{background:linear-gradient(155deg,#102b43,#0b354b 75%,#07556a);min-width:235px}[data-testid=stSidebar] *{color:#f0f8ff!important}[data-testid=stSidebar] [data-testid=stRadio] label{padding:12px 9px;border-radius:8px;cursor:pointer}[data-testid=stSidebar] [data-testid=stRadio] label:has(input:checked){background:#087eae}[data-testid=stSidebar] [data-testid=stRadio] [role=radiogroup]{gap:8px}[data-testid=stSidebar] button{background:#16475d;border-color:#42687b}[data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d5e5ef!important;border-radius:13px!important;background:#fafdff;box-shadow:0 3px 10px #123e5410}[data-testid=stMetric]{background:#eaf3f9;border:1px solid #d8e6ef;border-radius:9px;padding:10px}[data-testid=stMetricValue]{color:#102b43;font-size:24px}[data-testid=stMetricLabel]{font-size:12px}.stButton button,.stDownloadButton button{border-radius:8px}button[kind=primary]{background:#087da7!important;border-color:#087da7!important;color:white!important}.listhead{background:#dcecf5;padding:7px;border-radius:6px;font-weight:700;font-size:12px}.status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:normal}.stCaption{color:#52657c}.section-title{font-size:25px;font-weight:800;color:#102b43;margin:8px 0}.section-title small{font-size:13px;font-weight:400;color:#52657c;margin-left:12px}@media(max-width:700px){.hero{display:block;padding:12px}.hero h1{font-size:25px}.hero img,.hero .tag{display:none}.block-container{padding:1rem!important}}
 </style>""",unsafe_allow_html=True)
@@ -105,7 +105,7 @@ def obj(path):return json.loads(read(path))
 slots=['model_1','model_2','model_3']
 infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8'))
 header_img=base64.b64encode((ROOT/'data/header_road.jpg').read_bytes()).decode('ascii')
-st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V17</div></div>',unsafe_allow_html=True)
+st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V18</div></div>',unsafe_allow_html=True)
 from datetime import datetime, timezone
 @st.fragment(run_every=2)
 def catalog_watch():
@@ -291,11 +291,17 @@ if st.session_state['road_map_open']:
     st.markdown("""<style>[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .road-map-anchor){position:fixed;right:2rem;top:9rem;width:min(650px,90vw);max-height:75vh;overflow:auto;z-index:900;background:#f5f8fa;border:1px solid #b5cbd7;border-radius:14px;padding:16px;box-shadow:0 8px 32px #173b5533;} @media(max-width:700px){[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] .road-map-anchor){right:2vw;top:8rem;width:96vw;max-height:70vh;}}</style>""",unsafe_allow_html=True)
     with st.container(border=True):
         st.markdown('<span class="road-map-anchor"></span>',unsafe_allow_html=True)
-        st.markdown('### 도로 구간 위치 · 가상 지도')
+        map_title,map_close=st.columns([7,1],vertical_alignment='center')
+        with map_title:
+            st.markdown('### 도로 구간 위치 · 가상 지도')
+        with map_close:
+            def close_road_map():
+                st.session_state['road_map_open']=False
+            st.button('✕',key='road_map_close_x',help='지도 닫기',on_click=close_road_map,use_container_width=True)
         st.caption('실제 지리 좌표가 아닌 기능 테스트용 지도 · '+str(len(road_ids))+'개 구간')
         focus=st.toggle('선택 구간 자동 확대',value=False,key='road_map_focus')
         st.plotly_chart(map_figure(seg,focus),key='road_map_chart',on_select=map_pick,selection_mode='points',use_container_width=True,config={'scrollZoom':True,'displaylogo':False})
-        st.caption('도로 중앙의 점을 클릭하면 구간 선택 · 드래그 이동 · 휠 확대/축소 · 상단 지도 버튼으로만 닫기')
+        st.caption('도로 중앙의 점을 클릭하면 구간 선택 · 드래그 이동 · 휠 확대/축소 · 상단 지도 버튼 또는 ✕ 버튼으로 닫기')
         st.caption('🟢 관찰 (30 미만) · 🟡 주의 (30–60 미만) · 🟠 우선 점검 (60–80 미만) · 🔴 즉시 점검 권고 (80 이상)')
         selected_row=ranks.loc[ranks.segment_id.astype(str)==seg].iloc[0]
         st.write(f'**{seg}** · {selected_row.grade} · Risk {selected_row.risk_score:.1f}/100 · 순위 {int(selected_row["rank"])} / {len(road_ids)}')
