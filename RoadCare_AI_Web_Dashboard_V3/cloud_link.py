@@ -83,3 +83,15 @@ def delete_objects(names):
     cfg=settings()
     if not cfg: raise RuntimeError('Supabase 설정 없음')
     return _request('DELETE',quote(cfg[2],safe=''),data=json.dumps({'prefixes':names}),content_type='application/json')
+
+
+def original_created_at(rid):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    cfg=settings()
+    if not cfg: return '확인 불가'
+    response=_request('POST','list/'+quote(cfg[2],safe=''),data=json.dumps({'prefix':'runs/'+rid,'search':'original.mp4','limit':100}),content_type='application/json')
+    for item in response.json():
+        if item.get('name')=='original.mp4' and item.get('created_at'):
+            return datetime.fromisoformat(item['created_at'].replace('Z','+00:00')).astimezone(ZoneInfo('Asia/Seoul')).strftime('%Y.%m.%d %H:%M')
+    return '확인 불가'
