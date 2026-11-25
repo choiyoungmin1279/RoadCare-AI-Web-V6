@@ -8,7 +8,7 @@ from risk_ml import ranking, insights, forecast, grade
 from cloud_link import settings,get,put,original_created_at
 
 ROOT=Path(__file__).resolve().parent
-st.set_page_config(page_title='RoadCare AI | Web V21',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
+st.set_page_config(page_title='RoadCare AI | Web V24',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
 st.markdown("""<style>
 .stApp{background:#eaf3f9;color:#102b43}.block-container{max-width:1900px;padding:1.4rem 1.5rem 2rem}.hero{background:linear-gradient(100deg,#f7fbff 0%,#e3f2f8 42%,#123e54 100%);color:#102b43;padding:18px 22px;border-radius:12px;display:flex;align-items:center;gap:20px;min-height:92px;overflow:hidden}.hero h1{color:#102b43!important;font-size:34px;margin:0;padding:0}.hero em{color:#087f87;font-style:normal}.hero span{color:#284b63;font-weight:600}.hero img{width:32%;height:76px;object-fit:cover;border-radius:8px;margin-left:auto}.hero .tag{color:white;font-size:12px;white-space:nowrap}h1,h2,h3{color:#102b43}[data-testid=stHeader]{background:transparent}[data-testid=stSidebar]{background:linear-gradient(155deg,#102b43,#0b354b 75%,#07556a);min-width:235px}[data-testid=stSidebar] *{color:#f0f8ff!important}[data-testid=stSidebar] [data-testid=stRadio] label{padding:12px 9px;border-radius:8px;cursor:pointer}[data-testid=stSidebar] [data-testid=stRadio] label:has(input:checked){background:#087eae}[data-testid=stSidebar] [data-testid=stRadio] [role=radiogroup]{gap:8px}[data-testid=stSidebar] button{background:#16475d;border-color:#42687b}[data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d5e5ef!important;border-radius:13px!important;background:#fafdff;box-shadow:0 3px 10px #123e5410}[data-testid=stMetric]{background:#eaf3f9;border:1px solid #d8e6ef;border-radius:9px;padding:10px}[data-testid=stMetricValue]{color:#102b43;font-size:24px}[data-testid=stMetricLabel]{font-size:12px}.stButton button,.stDownloadButton button{border-radius:8px}button[kind=primary]{background:#087da7!important;border-color:#087da7!important;color:white!important}.listhead{background:#dcecf5;padding:7px;border-radius:6px;font-weight:700;font-size:12px}.status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:normal}.stCaption{color:#52657c}.section-title{font-size:25px;font-weight:800;color:#102b43;margin:8px 0}.section-title small{font-size:13px;font-weight:400;color:#52657c;margin-left:12px}@media(max-width:700px){.hero{display:block;padding:12px}.hero h1{font-size:25px}.hero img,.hero .tag{display:none}.block-container{padding:1rem!important}}
 </style>""",unsafe_allow_html=True)
@@ -21,7 +21,7 @@ def source_tag(label):st.caption('데이터 출처: '+label)
 def video_data(upload,path):
     if upload is None:return (ROOT/path).read_bytes()
     return upload.getvalue()
-def player_html(left, right, mode="자동", detections=None, ready=False):
+def player_html(left, right, mode="자동", detections=None, ready=False, playback_key=""):
     """Show entire source frames (portrait or landscape) without cropping."""
     def uri(data):
         return 'data:video/mp4;base64,' + base64.b64encode(data).decode('ascii') if data else ''
@@ -57,8 +57,8 @@ button{padding:8px 12px;background:#087F87;color:white;border:0;border-radius:7p
 .timeline{margin-top:14px;border:1px solid #d5e5ef;border-radius:10px;padding:10px;background:#fafdff}.timeline-head{display:flex;justify-content:space-between;gap:8px;font-weight:bold;font-size:14px}.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}.chart{min-width:0;border:1px solid #e1eaf0;border-radius:7px;padding:6px}.chart strong{font-size:12px}.chart svg{display:block;width:100%;height:110px}.timeline .note{margin-top:5px}@media(max-width:620px){.charts{grid-template-columns:1fr}} 
 __MODE_CSS__</style></head><body>
 <div class="video-grid">
- <div class="video-panel"><b>원본 영상</b><video id="a" controls autoplay loop muted playsinline preload="metadata" src="__LEFT__"></video></div>
- <div class="video-panel"><b>AI 분석 영상</b><video id="b" controls autoplay loop muted playsinline preload="metadata" src="__RIGHT__"></video><div id="pending" class="note"></div></div>
+ <div class="video-panel"><b>원본 영상</b><video id="a" controls loop muted playsinline preload="metadata" src="__LEFT__"></video></div>
+ <div class="video-panel"><b>AI 분석 영상</b><video id="b" controls loop muted playsinline preload="metadata" src="__RIGHT__"></video><div id="pending" class="note"></div></div>
 </div>
 <div class="actions"><button onclick="playBoth()">▶ 동시 재생</button><button onclick="pauseBoth()">⏸ 일시정지</button><button onclick="restartBoth()">↺ 처음부터</button><div class="mini-progress">__PROGRESS__</div></div>
 
@@ -70,11 +70,25 @@ if(!a.getAttribute('src'))a.removeAttribute('src');
 if(!b.getAttribute("src")){b.removeAttribute("src");document.getElementById("pending").textContent="분석 영상 전송 대기 / 결과 없음";}
 const master=b.getAttribute('src')?b:a, other=master===b?a:b;
 const available=v=>!!v.getAttribute('src');
+const storageKey='roadcare-player-v23:'+__PLAYER_KEY__;
+let saved=null;try{saved=JSON.parse(sessionStorage.getItem(storageKey));}catch(e){}
+let wantsPlay=saved?.playing!==false, initialized=false, generation=0;
+const videos=[a,b].filter(available);
+function persist(){if(!initialized)return;try{sessionStorage.setItem(storageKey,JSON.stringify({playing:wantsPlay,time:master.currentTime||0,rate:master.playbackRate||1}));}catch(e){}}
 function align(){if(available(other)&&Number.isFinite(other.duration)&&Math.abs(other.currentTime-master.currentTime)>.25)other.currentTime=Math.min(master.currentTime,other.duration);}
-function playBoth(){align();for(const v of [a,b])if(available(v))v.play().catch(()=>{});}
-function pauseBoth(){a.pause();b.pause();}
-function restartBoth(){for(const v of [a,b])if(available(v)&&v.readyState)v.currentTime=0;draw();playBoth();}
-for(const v of [a,b]){v.addEventListener('play',()=>{const o=v===a?b:a;if(available(o)&&o.paused)o.play().catch(()=>{});});v.addEventListener('pause',()=>{const o=v===a?b:a;if(!v.ended&&!o.paused)o.pause();});v.addEventListener('seeked',()=>{const o=v===a?b:a;if(available(o)&&Number.isFinite(o.duration)&&Math.abs(o.currentTime-v.currentTime)>.25)o.currentTime=Math.min(v.currentTime,o.duration);draw();});v.addEventListener('ratechange',()=>{const o=v===a?b:a;if(o.playbackRate!==v.playbackRate)o.playbackRate=v.playbackRate;});}
+function applyPlayback(){const token=++generation;for(const v of videos){if(wantsPlay){if(v.paused)v.play().then(()=>{if(token!==generation&&!wantsPlay)v.pause();}).catch(()=>{});}else v.pause();}persist();}
+function playBoth(){wantsPlay=true;align();applyPlayback();}
+function pauseBoth(){wantsPlay=false;applyPlayback();draw();}
+function restartBoth(){for(const v of videos)if(v.readyState)v.currentTime=0;draw();playBoth();}
+for(const v of videos){
+ v.addEventListener('play',()=>{if(!initialized||v.paused)return; if(!wantsPlay){wantsPlay=true;applyPlayback();}});
+ v.addEventListener('pause',()=>{if(!initialized||!v.paused||v.ended)return;if(wantsPlay){wantsPlay=false;applyPlayback();}draw();});
+ v.addEventListener('seeked',()=>{if(!initialized)return;const o=v===a?b:a;if(available(o)&&Number.isFinite(o.duration)&&Math.abs(o.currentTime-v.currentTime)>.25)o.currentTime=Math.min(v.currentTime,o.duration);persist();draw();});
+ v.addEventListener('ratechange',()=>{if(!initialized)return;const o=v===a?b:a;if(available(o)&&o.playbackRate!==v.playbackRate)o.playbackRate=v.playbackRate;persist();});
+}
+function initPlayback(){if(initialized)return;if(videos.some(v=>!v.readyState&&!v.error))return;for(const v of videos){if(v.readyState&&saved){if(Number.isFinite(saved.time)&&Number.isFinite(v.duration))v.currentTime=Math.min(saved.time,v.duration);if(Number.isFinite(saved.rate)&&saved.rate>0)v.playbackRate=saved.rate;}}initialized=true;applyPlayback();draw();}
+for(const v of videos){v.addEventListener('loadedmetadata',initPlayback);v.addEventListener('error',initPlayback);}
+window.addEventListener('pagehide',persist);
 const specs=[['누적 Track','#0891b2'],['Confidence · 누적 평균','#2563eb'],['Relative Area · 누적 평균','#d97706']];
 const host=document.getElementById('charts');
 for(const [name,color] of specs){const el=document.createElement('div');el.className='chart';el.innerHTML='<strong>'+name+'</strong><svg viewBox="0 0 240 110" role="img" aria-label="'+name+'"></svg>';host.appendChild(el);}
@@ -88,10 +102,10 @@ function draw(){const t=available(master)?master.currentTime:0;const dur=Number.
  for(let k=0;k<3;k++){const max=k===0?Math.max(1,rows.length):1;const x=v=>32+Math.min(1,v/dur)*198,y=v=>85-Math.max(0,Math.min(1,v/max))*72;const pts=points[k];let markup='';for(let j=0;j<=2;j++){const yy=85-j*36;markup+=`<line x1="32" x2="230" y1="${yy}" y2="${yy}" stroke="#dbe5eb"/><text x="28" y="${yy+3}" text-anchor="end" font-size="9" fill="#52657c">${k===0?Math.round(max*j/2):(j/2).toFixed(1)}</text>`;}markup+=`<text x="32" y="101" font-size="9" fill="#52657c">0s</text><text x="230" y="101" text-anchor="end" font-size="9" fill="#52657c">${dur.toFixed(1)}s</text>`;if(pts.length){markup+=`<polyline points="${pts.map(p=>x(p[0])+','+y(p[1])).join(' ')}" fill="none" stroke="${specs[k][1]}" stroke-width="1.7"/>`;const stride=Math.max(1,Math.ceil(pts.length/150));for(let j=0;j<pts.length;j++){if(j%stride&&j!==pts.length-1)continue;markup+=`<circle cx="${x(pts[j][0])}" cy="${y(pts[j][1])}" r="2" fill="${specs[k][1]}"/>`;}}markup+=`<line x1="${x(t)}" x2="${x(t)}" y1="13" y2="85" stroke="#64748b" stroke-dasharray="3 3"/>`;host.children[k].querySelector('svg').innerHTML=markup;}
 }
 for(const event of ['timeupdate','seeked','loadedmetadata','ended','pause'])master.addEventListener(event,draw);
-function tick(){if(!master.paused){align();draw();}requestAnimationFrame(tick);}draw();requestAnimationFrame(tick);
+let lastSave=0;function tick(now){if(initialized&&wantsPlay&&!master.paused){align();draw();if(now-lastSave>250){persist();lastSave=now;}}requestAnimationFrame(tick);}draw();initPlayback();requestAnimationFrame(tick);
 </script></body></html>
 """
-    html = html.replace('__PROGRESS__', '분석 진행률 <progress value="100" max="100"></progress> 100%' if ready else '분석 진행률: 우측 분석 요약에서 실시간 확인').replace('__ROWS__', payload).replace('__LEFT__', uri(left)).replace('__RIGHT__', uri(right)).replace('__MODE_CSS__', '.video-grid{grid-template-columns:1fr}video{max-height:220px}.charts{grid-template-columns:1fr}' if mode=='모바일' else '.video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}' if mode=='PC' else '')
+    html = html.replace('__PLAYER_KEY__', json.dumps(hashlib.sha256(playback_key.encode()).hexdigest())).replace('__PROGRESS__', '분석 진행률 <progress value="100" max="100"></progress> 100%' if ready else '분석 진행률: 우측 분석 요약에서 실시간 확인').replace('__ROWS__', payload).replace('__LEFT__', uri(left)).replace('__RIGHT__', uri(right)).replace('__MODE_CSS__', '.video-grid{grid-template-columns:1fr}video{max-height:220px}.charts{grid-template-columns:1fr}' if mode=='모바일' else '.video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}' if mode=='PC' else '')
     import streamlit.components.v1 as components
     # Explicit height prevents clipping; scrolling is a fallback on narrow screens.
     if mode=='자동':
@@ -107,10 +121,17 @@ legacy_infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8')
 def remote_registry():
     data=json.loads(get('sync/model_registry_v21.json'))
     if not isinstance(data,dict) or any(not isinstance(v,dict) for v in data.values()):raise ValueError('모델 목록 형식 오류')
-    return data
+    return {m:v for m,v in data.items() if str(v.get('model_name','')).strip().casefold()!='new road ai'}
 header_img=base64.b64encode((ROOT/'data/header_road.jpg').read_bytes()).decode('ascii')
-st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V21</div></div>',unsafe_allow_html=True)
-from datetime import datetime, timezone
+st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V24</div></div>',unsafe_allow_html=True)
+from datetime import datetime, timezone, timedelta
+def fmt_stamp(value):
+    if not value:return '기록 없음'
+    try:
+        dt=datetime.fromisoformat(str(value).replace('Z','+00:00'))
+        if dt.tzinfo is None:dt=dt.replace(tzinfo=timezone(timedelta(hours=9)))
+        return dt.astimezone(timezone(timedelta(hours=9))).strftime('%Y.%m.%d %H:%M')
+    except Exception:return str(value)
 @st.fragment(run_every=2)
 def catalog_watch():
     if not settings(): return
@@ -119,7 +140,7 @@ def catalog_watch():
     catalog_ok=registry_ok=False
     try:
         candidate=json.loads(get('sync/catalog_v6.json'))
-        if isinstance(candidate,list):current=candidate;catalog_ok=True
+        if isinstance(candidate,list):current=candidate;catalog_ok=True;st.session_state['last_catalog_ok']=datetime.now(timezone.utc).isoformat()
     except Exception:pass
     try:registry_now=remote_registry();registry_ok=True
     except Exception:pass
@@ -128,7 +149,7 @@ def catalog_watch():
         st.session_state['catalog']=current
         fetch.clear()
         st.rerun(scope='app')
-    st.caption(('목록 수신 정상' if catalog_ok else '목록 수신 대기')+' · '+('모델 정보 수신 정상' if registry_ok else '모델 정보 수신 대기')+' · 2초 주기 확인')
+    st.caption(('● 목록 수신 정상' if catalog_ok else '● 목록 수신 실패 · 마지막 데이터 유지')+' · '+('모델 정보 수신 정상' if registry_ok else '모델 정보 수신 대기')+' · 마지막 갱신 '+fmt_stamp(st.session_state.get('last_catalog_ok'))+' KST · 2초 주기 확인')
 if st.sidebar.button('클라우드 데이터 새로고침',use_container_width=True):
     fetch.clear()
     if settings():
@@ -151,7 +172,7 @@ if infos is None:infos=legacy_infos.copy()
 else:infos=infos.copy()
 for r in records:
     for m,status in r.get('models',{}).items():
-        if status=='분석 완료' and m not in infos:infos[m]={'model_name':m,'archived':True,'enabled':False}
+        if status=='분석 완료' and m not in infos and m not in ('new_road_ai','NEW ROAD AI'):infos[m]={'model_name':m,'archived':True,'enabled':False}
 slots=list(infos)
 if not slots:
     infos={'no_model':{'model_name':'등록 모델 없음','enabled':False}};slots=list(infos)
@@ -178,7 +199,10 @@ def display_name(r):return alias_for(r['id'],settings()[0:3:2]) or r.get('name',
 def status_label(r):
     status=r.get('models',{}).get(model_id,'대기 중')
     return {'분석 완료':'🟢 ✓ 분석 완료','분석 중':'🔄 분석 중','분석 실패':'🔴 ✕ 분석 실패'}.get(status,'⚪ '+status)
-if ids and st.session_state.get('selected_run') not in ids:st.session_state['selected_run']=ids[0]
+def selectable(r):
+    return r.get('models',{}).get(model_id)=='분석 완료' and r.get('transfers',{}).get(model_id,'전송 완료')=='전송 완료'
+eligible=[r['id'] for r in records if selectable(r)]
+if st.session_state.get('selected_run') not in eligible:st.session_state['selected_run']=eligible[0] if eligible else None
 
 import html as html_lib
 @st.cache_data(ttl=45,show_spinner=False,max_entries=100)
@@ -192,50 +216,100 @@ def select_video(rid, segment):
     # Widget callbacks run before the next script execution.
     st.session_state['selected_run'] = rid
     if segment in road_ids:
-        st.session_state['road_segment'] = segment
+        st.session_state['v24_pending_segment'] = segment
 
+CORE=('model_1','model_2','model_3')
+def final_stamp(r):
+    if not all(r.get('models',{}).get(m)=='분석 완료' for m in CORE):return None
+    times=r.get('completed_at',{})
+    try:return max(datetime.fromisoformat(times[m].replace('Z','+00:00')) for m in CORE).isoformat()
+    except (KeyError,ValueError,TypeError):return None
+@st.cache_data(ttl=600,show_spinner=False,max_entries=300)
+def legacy_created(rid,scope):
+    try:return original_created_at(rid)
+    except Exception:return None
+def created_stamp(r):
+    return r.get('created_at') or (legacy_created(r['id'],settings()[0:3:2]) if settings() and r.get('cloud') else None)
+def duration_label(r):
+    try:
+        n=int(float(r['duration_seconds']));return f'{n//3600:02d}:{n//60%60:02d}:{n%60:02d}'
+    except (KeyError,ValueError,TypeError):return str(r.get('duration') or '—')
+def date_cell(value):
+    t=fmt_stamp(value)
+    return html_lib.escape(t).replace(' ','<br>',1) if value else '—'
+def row_state(r):return r.get('models',{}).get(model_id,'대기 중')
+@st.fragment(run_every=2)
 def list_panel():
-    st.markdown('### 분석 영상 목록 (총 '+str(len(records))+'개)')
-    if not records:st.caption('로컬 전송 대기');return
-    widths=[.5,2.6,1.5,.8,1.4,1.1,1.7,.55,.55]
-    for col,label in zip(st.columns(widths),['번호','영상 파일명','분석 상태','손상 개수','주요 손상','영상 길이','업로드 일시','수정','정보']):
-        col.markdown('<div class="listhead">'+label+'</div>',unsafe_allow_html=True)
-    for i,r in enumerate(records,1):
-        rid=r['id']; name=display_name(r); status=r.get('models',{}).get(model_id,'대기 중')
-        n,classes=row_summary(rid,model_id,settings()[0:3:2]) if status=='분석 완료' else ('—','—')
-        duration,created=st.session_state.get('meta_'+rid+'_value',(r.get('duration','—'),r.get('created_at','—')))
-        num,a,state,count,kind,length,date,b,c=st.columns(widths)
-        num.write(i)
-        a.button('▶ '+name,key='pick_'+rid,use_container_width=True,type='primary' if rid==st.session_state.get('selected_run') else 'secondary',on_click=select_video,args=(rid,str(r.get('segment','R-001'))))
-        fg,bg={'분석 완료':('#087b38','#dcfce7'),'분석 중':('#1559c0','#dbeafe'),'분석 실패':('#b91c1c','#fee2e2')}.get(status,('#475569','#e2e8f0'))
-        state.markdown(f'<span class="status" style="color:{fg};background:{bg}">{html_lib.escape(status_label(r))}</span>',unsafe_allow_html=True)
-        count.write(str(n));kind.write(classes);length.write(str(duration));date.write(str(created))
-        with b:
-            with st.popover('✎',help='영상 이름 수정'):
-                new=st.text_input('표시 이름',name,key='alias_'+rid,max_chars=150)
-                if st.button('저장',key='save_'+rid,disabled=not new.strip()):
+    st.markdown("""<style>
+    .st-key-v24list{background:#E8F1F7;border:1px solid #c4d4df;border-radius:12px;padding:13px;color:#102E45}
+    .st-key-v24list [data-testid=stVerticalBlock]{gap:8px}
+    .st-key-v24list [data-testid=stHorizontalBlock]{gap:8px;flex-wrap:nowrap!important}
+    .st-key-v24list [data-testid=stColumn]{min-width:0!important;flex-basis:0!important}
+    .st-key-v24list .v24head{background:#D7E8F1;border-radius:5px;padding:7px 3px;font-size:12px;font-weight:700;white-space:nowrap}
+    .st-key-v24list .v24cell{font-size:12px;line-height:1.35;padding:7px 3px;color:#102E45}
+    .st-key-v24list button{min-height:37px;border-radius:8px;font-size:13px;background:white;color:#102E45;border:1px solid #d0dce5}
+    .st-key-v24list button[kind=primary]{background:#087DA1!important;color:white!important;border-color:#087DA1!important}
+    .st-key-v24list button:disabled{background:#DFE7ED!important;color:#82919D!important}
+    .st-key-v24list [class*=st-key-v24card] button{height:83px;text-align:left;white-space:pre-line;justify-content:flex-start;font-size:16px}
+    .st-key-v24list [class*=st-key-v24card] button[kind=primary]{background:white!important;color:#245B80!important;border:2px solid #245B80!important}
+    .st-key-v24list [class*=st-key-v24card] button p{white-space:pre-line}
+    .st-key-v24list [data-testid=stPopover] button{padding:0;border:0;background:transparent}
+    @media(max-width:850px){.st-key-v24list [class*=st-key-v24table]{overflow-x:auto}.st-key-v24list [class*=st-key-v24table] > div{min-width:680px}}
+    </style>""",unsafe_allow_html=True)
+    with st.container(key='v24list'):
+        title,toggle=st.columns([5,1])
+        title.markdown(f'### 분석 영상 목록 (총 {len(records)}개)')
+        if toggle.button('펼치기' if st.session_state.get('v24collapsed') else '접기',key='v24toggle'):
+            st.session_state['v24collapsed']=not st.session_state.get('v24collapsed',False);st.rerun(scope='fragment')
+        if st.session_state.get('v24collapsed'):return
+        if not records:st.caption('로컬 전송 대기');return
+        filt=st.session_state.get('v24filter','전체')
+        groups=[('전체','전체 영상','#245B80'),('분석 완료','분석 완료','#168653'),('분석 중','분석 중','#247AC1'),('분석 실패','분석 실패','#B42323')]
+        for col,(k,label,color) in zip(st.columns(4),groups):
+            n=sum(k=='전체' or row_state(r)==k for r in records)
+            with col,st.container(key='v24card'+str(groups.index((k,label,color)))):
+                st.markdown(f'<style>.st-key-v24card{groups.index((k,label,color))} button p{{color:{color}!important}}</style>',unsafe_allow_html=True)
+                if st.button(f'{label}  \n{n}',key='v24filter'+k,type='primary' if filt==k else 'secondary',use_container_width=True):
+                    st.session_state['v24filter']=k;st.rerun(scope='fragment')
+        q=st.text_input('영상 이름 검색',placeholder='영상 이름 검색',label_visibility='collapsed',key='v24search')
+        order=st.selectbox('정렬',['업로드 순','최신 등록 순','분석 완료 순','영상 이름순'],label_visibility='collapsed',key='v24sort')
+        rows=[(r.get('registration_no',i),r,display_name(r)) for i,r in enumerate(records,1)]
+        rows=[x for x in rows if (filt=='전체' or row_state(x[1])==filt) and q.casefold() in x[2].casefold()]
+        if order=='최신 등록 순':rows.sort(key=lambda x:x[0],reverse=True)
+        elif order=='분석 완료 순':rows.sort(key=lambda x:final_stamp(x[1]) or '',reverse=True)
+        elif order=='영상 이름순':rows.sort(key=lambda x:x[2].casefold())
+        else:rows.sort(key=lambda x:x[0])
+        widths=[.42,2.6,.38,1.35,.85,1.4,1.4]
+        with st.container(key='v24table'):
+            for col,label in zip(st.columns(widths),['번호','영상 파일명','','분석 상태','영상 길이','업로드 일시','분석 일시']):col.markdown('<div class="v24head">'+(label or '&nbsp;')+'</div>',unsafe_allow_html=True)
+            for num,r,name in rows:
+                rid=r['id'];status=row_state(r);n=sum(r.get('models',{}).get(m)=='분석 완료' for m in CORE)
+                cols=st.columns(widths)
+                cols[0].markdown(f'<div class="v24cell">{num}</div>',unsafe_allow_html=True)
+                if cols[1].button(('▸ ' if selectable(r) else '')+name,key='pick_'+rid,use_container_width=True,type='primary' if rid==st.session_state.get('selected_run') else 'secondary',disabled=not selectable(r),on_click=select_video,args=(rid,str(r.get('segment','R-001')))):
+                    st.rerun(scope='app')
+                with cols[2],st.popover('✎',help='영상 이름 수정'):
+                    new=st.text_input('표시 이름',name,key='alias_'+rid,max_chars=150)
+                    if st.button('저장',key='save_'+rid,disabled=not new.strip()):
+                        try:put('web_metadata/'+rid+'.json',json.dumps({'display_name':new.strip()},ensure_ascii=False).encode(),'application/json');alias_for.clear();st.rerun(scope='app')
+                        except Exception:st.error('이름 저장 실패 · 연결 확인')
+                fg={'분석 완료':'#168653','분석 중':'#247AC1','분석 실패':'#B42323'}.get(status,'#788A9B')
+                label=status
+                if status=='분석 중':
                     try:
-                        put('web_metadata/'+rid+'.json',json.dumps({'display_name':new.strip()},ensure_ascii=False).encode(),'application/json');alias_for.clear();st.rerun()
-                    except Exception:st.error('이름 저장 실패 · 연결 확인')
-        with c:
-            with st.popover('ⓘ',help='영상 정보'):
-                st.write(name)
-                if st.button('정보 조회',key='meta_'+rid):
-                    try:
-                        import tempfile, subprocess, imageio_ffmpeg,re
-                        with tempfile.NamedTemporaryFile(suffix='.mp4') as f:
-                            f.write(read('runs/'+rid+'/original.mp4'));f.flush()
-                            proc=subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(),'-i',f.name],capture_output=True,text=True,timeout=30)
-                            match=re.search(r'Duration: (\d+:\d+:\d+(?:\.\d+)?)',proc.stderr)
-                        duration=match.group(1).split('.')[0] if match else '확인 불가'
-                    except Exception:duration='확인 불가'
-                    try:created=original_created_at(rid)
-                    except Exception:created='확인 불가'
-                    st.session_state['meta_'+rid+'_value']=(duration,created)
-                duration,created=st.session_state.get('meta_'+rid+'_value',('정보 조회 버튼을 눌러주세요','정보 조회 버튼을 눌러주세요'))
-                st.write('총 영상 길이: '+duration);st.write('추가된 날짜: '+created)
+                        live=json.loads(get(f'runs/{rid}/{model_id}/live.json'))
+                        if live.get('status')=='analyzing':label+=f" · {max(0,min(99,int(float(live['progress'])*100)))}%"
+                    except Exception:pass
+                bars=''.join(f'<span style="flex:1;height:4px;border-radius:4px;background:{"#168653" if i<n else "#C3D4DF"}"></span>' for i in range(3))
+                cols[3].markdown(f'<div class="v24cell" style="color:{fg}">● {html_lib.escape(label)}<div style="display:flex;gap:3px;align-items:center;margin-top:4px">{bars}<span style="color:#596B80;font-size:11px">{n}/3</span></div></div>',unsafe_allow_html=True)
+                for col,val in zip(cols[4:],[html_lib.escape(duration_label(r)),date_cell(created_stamp(r)),date_cell(final_stamp(r))]):col.markdown(f'<div class="v24cell">{val}</div>',unsafe_allow_html=True)
+            if not rows:st.caption('검색 결과가 없습니다.')
+        st.divider()
+        selected=next((r for r in records if r['id']==st.session_state.get('selected_run')),None)
+        st.caption('▶ 현재 선택 영상: '+(display_name(selected) if selected else '선택 가능한 완료 영상 없음'))
+        st.caption('상태는 선택 모델 기준 · 완료 막대 및 분석 일시는 기존 3개 모델 기준 · — : 미완료 또는 기록 없음')
 
-chosen=st.session_state.get('selected_run') if ids else None
+chosen=st.session_state.get('selected_run') if eligible else None
 rec=next((r for r in records if r.get('id')==chosen),None)
 seg=str(rec.get('segment','R-001')) if rec else 'R-001'
 work='runs/'+chosen+'/'+model_id if chosen else None
@@ -257,6 +331,8 @@ except Exception as e:st.error(f'데이터 로딩 오류: {e}');st.stop()
 import plotly.graph_objects as go
 road_ids=sorted(ranks.segment_id.astype(str).unique())
 if not road_ids: st.error('도로 구간 데이터 없음'); st.stop()
+if st.session_state.get('v24_pending_segment') in road_ids:
+    st.session_state['road_segment']=st.session_state.pop('v24_pending_segment')
 if st.session_state.get('road_segment') not in road_ids:
     st.session_state['road_segment']=seg if seg in road_ids else road_ids[0]
 
@@ -374,7 +450,7 @@ if page=='영상 분석':
             try:right=read(work+'/result.mp4')
             except Exception:st.caption('분석 영상 수신 대기')
     with main:
-        with st.container(border=True):player_html(left,right,mode,detections,ready)
+        with st.container(border=True):player_html(left,right,mode,detections,ready,playback_key=str(chosen)+'/'+str(model_id))
     if not chosen:
         with main:st.info('로컬에서 전송된 영상이 없습니다.')
     @st.fragment(run_every=2)
@@ -426,17 +502,14 @@ if page=='영상 분석':
     with side:
         with st.container(border=True):live_panel("summary")
     with st.container(border=True):live_panel("charts")
-    bottom,details=st.columns([3,1],gap='small')
-    with bottom:
-        with st.container(border=True):list_panel()
-    with details:
+    list_panel()
+    if rec:
         with st.container(border=True):
             st.markdown('### 영상 정보')
             if rec:
                 st.write(display_name(rec))
-                duration,created=st.session_state.get('meta_'+chosen+'_value',(rec.get('duration','—'),rec.get('created_at','—')))
-                st.write('영상 길이: '+str(duration));st.write('업로드 일시: '+str(created))
-                st.caption('목록의 정보 버튼에서 상세 조회')
+                st.write('영상 길이: '+duration_label(rec));st.write('업로드 일시: '+fmt_stamp(created_stamp(rec)))
+                st.write('분석 일시: '+fmt_stamp(final_stamp(rec)))
             else:st.caption('선택된 영상 없음')
     if ready:
         st.write('실측 추론 FPS:',result.get('summary',{}).get('inference_fps','—'))
