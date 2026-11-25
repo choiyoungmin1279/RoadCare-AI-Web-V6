@@ -8,15 +8,15 @@ from risk_ml import ranking, insights, forecast, grade
 from cloud_link import settings,get,put,original_created_at
 
 ROOT=Path(__file__).resolve().parent
-st.set_page_config(page_title='RoadCare AI | Web V11',page_icon='🛣️',layout='wide')
+st.set_page_config(page_title='RoadCare AI | Web V12',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
 st.markdown("""<style>
-.stApp{background:#eaf1f8;color:#10213b}.block-container{max-width:1800px;padding:1rem 1.1rem 2rem}.hero{background:#10213b;color:white;padding:12px 20px;border-radius:12px;margin-bottom:4px;display:flex;align-items:center;gap:24px}.hero h1{color:white!important;font-size:32px;margin:0;padding:0}.hero span{color:#e1edf7}.hero em{color:#00b9bb;font-style:normal} [data-testid=stHeader]{background:transparent;height:0} [data-testid=stToolbar]{display:none} [data-testid=stSidebar]{display:none} h1,h2,h3{color:#10213b} [data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d2e0ed!important;border-radius:14px!important;background:white;box-shadow:0 3px 9px #10213b12} [data-testid=stMetric]{background:#edf5fa;border-radius:9px;padding:8px} [data-testid=stMetricValue]{color:#10213b;font-size:25px} [data-testid=stMetricLabel]{font-size:12px} [data-testid=stRadio] [role=radiogroup]{display:flex;flex-wrap:wrap;gap:8px;background:white;padding:8px;border-radius:12px} [data-testid=stRadio] label{flex:1;white-space:normal} button[kind=primary]{background:#009fa5!important;border-color:#009fa5!important;color:white!important} .stButton button{border-radius:9px} .st-key-nav [data-testid=stRadio] label{font-weight:700} .listhead{background:#dceafa;padding:7px;border-radius:7px;font-weight:700;font-size:13px} .status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:nowrap} .stCaption{color:#52657c} @media(max-width:700px){.hero{display:block}.hero h1{font-size:25px}}
+.stApp{background:#eaf3f9;color:#102b43}.block-container{max-width:1900px;padding:1.4rem 1.5rem 2rem}.hero{background:linear-gradient(100deg,#f7fbff 0%,#e3f2f8 42%,#123e54 100%);color:#102b43;padding:18px 22px;border-radius:12px;display:flex;align-items:center;gap:20px;min-height:92px;overflow:hidden}.hero h1{color:#102b43!important;font-size:34px;margin:0;padding:0}.hero em{color:#087f87;font-style:normal}.hero span{color:#284b63;font-weight:600}.hero img{width:32%;height:76px;object-fit:cover;border-radius:8px;margin-left:auto}.hero .tag{color:white;font-size:12px;white-space:nowrap}h1,h2,h3{color:#102b43}[data-testid=stHeader]{background:transparent}[data-testid=stSidebar]{background:linear-gradient(155deg,#102b43,#0b354b 75%,#07556a);min-width:235px}[data-testid=stSidebar] *{color:#f0f8ff!important}[data-testid=stSidebar] [data-testid=stRadio] label{padding:12px 9px;border-radius:8px;cursor:pointer}[data-testid=stSidebar] [data-testid=stRadio] label:has(input:checked){background:#087eae}[data-testid=stSidebar] [data-testid=stRadio] [role=radiogroup]{gap:8px}[data-testid=stSidebar] button{background:#16475d;border-color:#42687b}[data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d5e5ef!important;border-radius:13px!important;background:#fafdff;box-shadow:0 3px 10px #123e5410}[data-testid=stMetric]{background:#eaf3f9;border:1px solid #d8e6ef;border-radius:9px;padding:10px}[data-testid=stMetricValue]{color:#102b43;font-size:24px}[data-testid=stMetricLabel]{font-size:12px}.stButton button,.stDownloadButton button{border-radius:8px}button[kind=primary]{background:#087da7!important;border-color:#087da7!important;color:white!important}.listhead{background:#dcecf5;padding:7px;border-radius:6px;font-weight:700;font-size:12px}.status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:normal}.stCaption{color:#52657c}.section-title{font-size:25px;font-weight:800;color:#102b43;margin:8px 0}.section-title small{font-size:13px;font-weight:400;color:#52657c;margin-left:12px}@media(max-width:700px){.hero{display:block;padding:12px}.hero h1{font-size:25px}.hero img,.hero .tag{display:none}.block-container{padding:1rem!important}}
 </style>""",unsafe_allow_html=True)
 
 def get_df(upload,path):
     return pd.read_csv(upload if upload is not None else ROOT/path)
 def download(label,df,name):st.download_button(label,df.to_csv(index=False).encode('utf-8-sig'),name,mime='text/csv')
-def plot(fig):st.plotly_chart(fig.update_layout(colorway=['#009fa5','#ff902d','#2563eb','#10213b','#e55353'],margin=dict(l=12,r=12,t=45,b=12),height=260,paper_bgcolor='#ffffff',plot_bgcolor='#ffffff'),use_container_width=True)
+def plot(fig):st.plotly_chart(fig.update_layout(colorway=['#009fa5','#ff902d','#2563eb','#10213b','#e55353'],margin=dict(l=12,r=12,t=45,b=12),height=260,paper_bgcolor='#fafdff',plot_bgcolor='#fafdff'),use_container_width=True)
 def source_tag(label):st.caption('데이터 출처: '+label)
 def video_data(upload,path):
     if upload is None:return (ROOT/path).read_bytes()
@@ -30,8 +30,8 @@ def player_html(left, right, mode="자동"):
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#17324D;background:transparent}
 .video-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
-.video-panel{min-width:0}.video-panel b{display:block;margin:0 0 7px}
-video{display:block;width:100%;aspect-ratio:16/9;height:auto;max-height:78vh;object-fit:contain;background:#101820;border-radius:10px}
+.video-panel{min-width:0}.video-panel b{display:block;margin:0;padding:10px 12px;background:#34576b;color:white;border-radius:8px 8px 0 0}.video-panel:nth-child(2) b{background:#087f91}
+video{display:block;width:100%;aspect-ratio:16/9;height:auto;max-height:78vh;object-fit:contain;background:#101820;border-radius:0 0 8px 8px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 6px}
 button{padding:8px 12px;background:#087F87;color:white;border:0;border-radius:7px;cursor:pointer}
 .note{font-size:12px;color:#52657C;line-height:1.5}
@@ -72,7 +72,8 @@ def read(path):return fetch(path,settings()[0:3:2])
 def obj(path):return json.loads(read(path))
 slots=['model_1','model_2','model_3']
 infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8'))
-st.markdown('<div class="hero"><h1>🛣 RoadCare <em>AI</em></h1><span>AI 기반 도로 위험요소 분석 플랫폼</span></div>',unsafe_allow_html=True)
+header_img=base64.b64encode((ROOT/'data/header_road.jpg').read_bytes()).decode('ascii')
+st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V12</div></div>',unsafe_allow_html=True)
 from datetime import datetime, timezone
 @st.fragment(run_every=2)
 def catalog_watch():
@@ -87,7 +88,7 @@ def catalog_watch():
         st.caption('목록 수신 정상 · 2초 주기 확인')
     except Exception:
         st.caption('목록 수신 대기 또는 연결 오류')
-if st.button('클라우드 데이터 새로고침'):
+if st.sidebar.button('클라우드 데이터 새로고침',use_container_width=True):
     fetch.clear()
     if settings():
         try: st.session_state['catalog']=json.loads(get('sync/catalog_v6.json'))
@@ -100,13 +101,15 @@ if settings() and 'catalog' not in st.session_state:
     except Exception: pass
 if not settings(): st.warning('Streamlit Cloud Secrets 설정 필요')
 catalog_watch()
-mode=st.radio('화면 모드',['자동','PC','모바일'],horizontal=True,key='display_mode')
+mode=st.sidebar.radio('화면 모드',['자동','PC','모바일'],horizontal=True,key='display_mode')
 if mode=='모바일':
     st.markdown('<style>[data-testid="stHorizontalBlock"]{flex-wrap:wrap!important}[data-testid="stColumn"]{min-width:100%!important;flex:1 1 100%!important} [data-testid="stExpander"] [data-testid="stHorizontalBlock"]{flex-wrap:nowrap!important} [data-testid="stExpander"] [data-testid="stColumn"]{min-width:0!important;flex:1 1 0!important} [data-testid="stExpander"] [data-testid="stColumn"]:first-child{flex:6 1 0!important}</style>',unsafe_allow_html=True)
 elif mode=='자동':
     st.markdown('<style>@media(max-width:700px){[data-testid="stHorizontalBlock"]{flex-wrap:wrap!important}[data-testid="stColumn"]{min-width:100%!important;flex:1 1 100%!important} [data-testid="stExpander"] [data-testid="stHorizontalBlock"]{flex-wrap:nowrap!important} [data-testid="stExpander"] [data-testid="stColumn"]{min-width:0!important;flex:1 1 0!important} [data-testid="stExpander"] [data-testid="stColumn"]:first-child{flex:6 1 0!important}.block-container{padding:1rem!important}}</style>',unsafe_allow_html=True)
-st.markdown('<style>[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none} .stButton button{border-radius:9px} [data-testid="stRadio"] label{white-space:normal} .hero{background:#102b49} </style>',unsafe_allow_html=True)
-page=st.radio('화면 선택',['영상 분석','도로 위험도·우선순위','월별 변화·보수효과','Intelligent Insight','AI 모델 성능'],horizontal=True,label_visibility='collapsed',key='nav')
+st.sidebar.markdown('## RoadCare AI')
+st.sidebar.caption('도로 유지관리 · WEB')
+page=st.sidebar.radio('화면 선택',['영상 분석','도로 위험도·우선순위','월별 변화·보수효과','Intelligent Insight','AI 모델 성능'],horizontal=False,label_visibility='collapsed',key='nav')
+st.markdown('<div class="section-title">'+page+'<small>AI 도로 유지관리 플랫폼</small></div>',unsafe_allow_html=True)
 model_id=st.segmented_control('AI 모델 (전체 화면 공통)',slots,format_func=lambda m:dict(zip(slots,['SSDLite','YOLO11n','RT-DETR']))[m],default=slots[0],key='model_choice') or slots[0]
 ids=[r['id'] for r in records if 'id' in r]
 @st.cache_data(ttl=10,show_spinner=False)
@@ -191,7 +194,8 @@ if page=='영상 분석':
     main,side=st.columns([2.15,1],gap='small')
     with main:
         st.markdown('### 원본 영상 / AI 분석 영상')
-    if rec:st.caption(display_name(rec)+' · '+status_label(rec))
+    if rec:
+        with main:st.caption(display_name(rec)+' · '+status_label(rec))
     left=right=None
     if chosen:
         try:left=read('runs/'+chosen+'/original.mp4')
@@ -201,7 +205,8 @@ if page=='영상 분석':
             except Exception:st.caption('분석 영상 수신 대기')
     with main:
         with st.container(border=True):player_html(left,right,mode)
-    if not chosen:st.info('로컬에서 전송된 영상이 없습니다.')
+    if not chosen:
+        with main:st.info('로컬에서 전송된 영상이 없습니다.')
     @st.fragment(run_every=2)
     def live_panel(part):
         data=result if ready else None
@@ -211,6 +216,12 @@ if page=='영상 분석':
                 candidate=json.loads(get(work+'/live.json'))
                 if candidate.get('model')==model_id and candidate.get('status') in ('analyzing','complete'): data=candidate
             except Exception: st.caption('중간 데이터 수신 대기 또는 연결 오류')
+        if part=='progress':
+            st.markdown('**분석 진행률**')
+            if data is not None and data.get('progress') is not None:st.progress(max(0.,min(1.,float(data['progress']))))
+            elif ready:st.progress(1.)
+            else:st.caption(status)
+            return
         if part=='summary':st.markdown('### 분석 요약')
         st.caption(status+' · '+infos[model_id]['model_name'])
         if data is None:
@@ -244,8 +255,8 @@ if page=='영상 분석':
         with st.expander('탐지 상세 데이터'):st.dataframe(d,use_container_width=True)
     with side:
         with st.container(border=True):live_panel("summary")
-    with main:
-        with st.container(border=True):live_panel("charts")
+    with st.container(border=True):live_panel("progress")
+    with st.container(border=True):live_panel("charts")
     bottom,details=st.columns([3,1],gap='small')
     with bottom:
         with st.container(border=True):list_panel()
