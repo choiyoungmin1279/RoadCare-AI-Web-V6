@@ -114,24 +114,28 @@ from datetime import datetime, timezone
 @st.fragment(run_every=2)
 def catalog_watch():
     if not settings(): return
+    current=st.session_state.get('catalog',[])
+    registry_now=st.session_state.get('registry21')
+    catalog_ok=registry_ok=False
     try:
-        current=json.loads(get('sync/catalog_v6.json'))
-        if not isinstance(current,list): raise ValueError('목록 형식 오류')
-        try: registry_now=remote_registry()
-        except Exception: registry_now=st.session_state.get('registry21')
-        if current != st.session_state.get('catalog',[]) or registry_now != st.session_state.get('registry21'):
-            st.session_state['registry21']=registry_now
-            fetch.clear()
-            st.session_state['catalog']=current
-            st.rerun(scope='app')
-        st.caption('목록 수신 정상 · 2초 주기 확인')
-    except Exception:
-        st.caption('목록 수신 대기 또는 연결 오류')
+        candidate=json.loads(get('sync/catalog_v6.json'))
+        if isinstance(candidate,list):current=candidate;catalog_ok=True
+    except Exception:pass
+    try:registry_now=remote_registry();registry_ok=True
+    except Exception:pass
+    if current != st.session_state.get('catalog',[]) or registry_now != st.session_state.get('registry21'):
+        st.session_state['registry21']=registry_now
+        st.session_state['catalog']=current
+        fetch.clear()
+        st.rerun(scope='app')
+    st.caption(('목록 수신 정상' if catalog_ok else '목록 수신 대기')+' · '+('모델 정보 수신 정상' if registry_ok else '모델 정보 수신 대기')+' · 2초 주기 확인')
 if st.sidebar.button('클라우드 데이터 새로고침',use_container_width=True):
     fetch.clear()
     if settings():
         try: st.session_state['catalog']=json.loads(get('sync/catalog_v6.json'))
         except Exception: st.warning('목록 수신 실패')
+        try: st.session_state['registry21']=remote_registry()
+        except Exception: st.warning('모델 정보 수신 실패')
 records=st.session_state.get('catalog',[])
 if settings() and 'catalog' not in st.session_state:
     try:
