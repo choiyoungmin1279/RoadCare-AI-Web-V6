@@ -8,7 +8,7 @@ from risk_ml import ranking, insights, forecast, grade
 from cloud_link import settings,get,put,original_created_at
 
 ROOT=Path(__file__).resolve().parent
-st.set_page_config(page_title='RoadCare AI | Web V14',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
+st.set_page_config(page_title='RoadCare AI | Web V15',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
 st.markdown("""<style>
 .stApp{background:#eaf3f9;color:#102b43}.block-container{max-width:1900px;padding:1.4rem 1.5rem 2rem}.hero{background:linear-gradient(100deg,#f7fbff 0%,#e3f2f8 42%,#123e54 100%);color:#102b43;padding:18px 22px;border-radius:12px;display:flex;align-items:center;gap:20px;min-height:92px;overflow:hidden}.hero h1{color:#102b43!important;font-size:34px;margin:0;padding:0}.hero em{color:#087f87;font-style:normal}.hero span{color:#284b63;font-weight:600}.hero img{width:32%;height:76px;object-fit:cover;border-radius:8px;margin-left:auto}.hero .tag{color:white;font-size:12px;white-space:nowrap}h1,h2,h3{color:#102b43}[data-testid=stHeader]{background:transparent}[data-testid=stSidebar]{background:linear-gradient(155deg,#102b43,#0b354b 75%,#07556a);min-width:235px}[data-testid=stSidebar] *{color:#f0f8ff!important}[data-testid=stSidebar] [data-testid=stRadio] label{padding:12px 9px;border-radius:8px;cursor:pointer}[data-testid=stSidebar] [data-testid=stRadio] label:has(input:checked){background:#087eae}[data-testid=stSidebar] [data-testid=stRadio] [role=radiogroup]{gap:8px}[data-testid=stSidebar] button{background:#16475d;border-color:#42687b}[data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d5e5ef!important;border-radius:13px!important;background:#fafdff;box-shadow:0 3px 10px #123e5410}[data-testid=stMetric]{background:#eaf3f9;border:1px solid #d8e6ef;border-radius:9px;padding:10px}[data-testid=stMetricValue]{color:#102b43;font-size:24px}[data-testid=stMetricLabel]{font-size:12px}.stButton button,.stDownloadButton button{border-radius:8px}button[kind=primary]{background:#087da7!important;border-color:#087da7!important;color:white!important}.listhead{background:#dcecf5;padding:7px;border-radius:6px;font-weight:700;font-size:12px}.status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:normal}.stCaption{color:#52657c}.section-title{font-size:25px;font-weight:800;color:#102b43;margin:8px 0}.section-title small{font-size:13px;font-weight:400;color:#52657c;margin-left:12px}@media(max-width:700px){.hero{display:block;padding:12px}.hero h1{font-size:25px}.hero img,.hero .tag{display:none}.block-container{padding:1rem!important}}
 </style>""",unsafe_allow_html=True)
@@ -105,7 +105,7 @@ def obj(path):return json.loads(read(path))
 slots=['model_1','model_2','model_3']
 infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8'))
 header_img=base64.b64encode((ROOT/'data/header_road.jpg').read_bytes()).decode('ascii')
-st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V14</div></div>',unsafe_allow_html=True)
+st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V15</div></div>',unsafe_allow_html=True)
 from datetime import datetime, timezone
 @st.fragment(run_every=2)
 def catalog_watch():
@@ -175,7 +175,7 @@ def list_panel():
         num,a,state,count,kind,length,date,b,c=st.columns(widths)
         num.write(i)
         if a.button('▶ '+name,key='pick_'+rid,use_container_width=True,type='primary' if rid==st.session_state.get('selected_run') else 'secondary'):
-            st.session_state['selected_run']=rid;st.rerun()
+            st.session_state['selected_run']=rid;st.session_state['road_segment']=str(r.get('segment','R-001'));st.rerun()
         fg,bg={'분석 완료':('#087b38','#dcfce7'),'분석 중':('#1559c0','#dbeafe'),'분석 실패':('#b91c1c','#fee2e2')}.get(status,('#475569','#e2e8f0'))
         state.markdown(f'<span class="status" style="color:{fg};background:{bg}">{html_lib.escape(status_label(r))}</span>',unsafe_allow_html=True)
         count.write(str(n));kind.write(classes);length.write(str(duration));date.write(str(created))
@@ -206,7 +206,7 @@ def list_panel():
 
 chosen=st.session_state.get('selected_run') if ids else None
 rec=next((r for r in records if r.get('id')==chosen),None)
-seg=rec.get('segment','R-001') if rec else st.selectbox('도로 구간',[f'R-{i:03d}' for i in range(1,31)])
+seg=str(rec.get('segment','R-001')) if rec else 'R-001'
 work='runs/'+chosen+'/'+model_id if chosen else None
 ready=False;result={'data_type':'NO_RESULT','detections':[],'summary':{}}
 if work and rec.get('models',{}).get(model_id)=='분석 완료':
@@ -218,16 +218,72 @@ try:
     required={'segment_id','month','pothole_count','avg_relative_area','max_relative_area','recurrence_count','traffic_volume','road_age_year','risk_score_before','risk_score_after'}
     if not required.issubset(simulation.columns):st.error('simulation.csv 필수 컬럼 누락: '+str(sorted(required-set(simulation.columns))));st.stop()
     performance=pd.DataFrame([dict(model=v['model_name'],**{k:v.get(k) for k in ['precision','recall','f1','map50','map50_95','fps']}) for v in infos.values()]);info=infos.get(model_id,{})
-    ranks=ranking(simulation);seg=seg if seg in ranks.segment_id.values else str(ranks.iloc[0].segment_id);row=ranks.loc[ranks.segment_id==seg].iloc[0]
+    ranks=ranking(simulation)
     detections=pd.DataFrame(result.get('detections',[]))
 except Exception as e:st.error(f'데이터 로딩 오류: {e}');st.stop()
+
+# V15: common fictional road map, no external tiles or credentials.
+import plotly.graph_objects as go
+road_ids=sorted(ranks.segment_id.astype(str).unique())
+if not road_ids: st.error('도로 구간 데이터 없음'); st.stop()
+if st.session_state.get('road_segment') not in road_ids:
+    st.session_state['road_segment']=seg if seg in road_ids else road_ids[0]
+
+def map_figure(selected, focus):
+    fig=go.Figure()
+    cols=6; rows=(len(road_ids)+cols-1)//cols
+    # Schematic city blocks, river and local streets; coordinates are fictional.
+    for j in range(rows+1):
+        for i in range(cols+1):
+            x=i*2; y=j*2
+            fig.add_shape(type='rect',x0=x+.18,x1=x+1.65,y0=y+.2,y1=y+1.35,fillcolor='#dce7d5' if (i+j)%4==0 else '#e4e2db',line=dict(color='white',width=1),layer='below')
+    fig.add_shape(type='rect',x0=-.5,x1=cols*2+.5,y0=-.8,y1=-.3,fillcolor='#a7d6e9',line_width=0,layer='below')
+    for j in range(rows):
+        fig.add_shape(type='line',x0=-.2,x1=cols*2,y0=j*2+1.6,y1=j*2+1.6,line=dict(color='white',width=13),layer='below')
+    for i in range(cols+1):
+        fig.add_shape(type='line',x0=i*2,x1=i*2,y0=0,y1=rows*2,line=dict(color='white',width=9),layer='below')
+    colors={'관찰':'#269447','주의':'#d7a000','우선 점검':'#e87924','즉시 점검 권고':'#c62838'}
+    centers={}
+    for k,sid in enumerate(road_ids):
+        x=(k%cols)*2; y=(rows-1-k//cols)*2+1.6; centers[sid]=(x+1,y)
+        r=ranks.loc[ranks.segment_id.astype(str)==sid].iloc[0]; c=colors.get(r.grade,'#64748b'); active=sid==selected
+        fig.add_trace(go.Scatter(x=[x+.12,x+.55,x+1,x+1.45,x+1.88],y=[y,y+.07,y,y-.07,y],mode='lines+markers+text',line=dict(color=c,width=13 if active else 7),marker=dict(size=[5,5,16 if active else 10,5,5],color=c,line=dict(color='white',width=1)),text=['','',sid,'',''],textposition='top center',textfont=dict(size=13 if active else 10,color='#102b43'),customdata=[sid]*5,hovertemplate=sid+' · '+str(r.grade)+' · '+f'{r.risk_score:.1f}/100<extra></extra>',showlegend=False,opacity=1 if active else .72))
+    x,y=centers[selected]
+    fig.update_layout(height=440,margin=dict(l=5,r=5,t=10,b=5),paper_bgcolor='#f5f8fa',plot_bgcolor='#f1f0e9',dragmode='pan',clickmode='event+select',xaxis=dict(visible=False,range=[x-2.8,x+2.8] if focus else [-.5,cols*2+.5]),yaxis=dict(visible=False,range=[y-2.1,y+2.1] if focus else [-.9,rows*2+.2],scaleanchor='x',scaleratio=1),showlegend=False)
+    return fig
+
+def map_pick():
+    event=st.session_state.get('road_map_chart',{})
+    points=event.get('selection',{}).get('points',[])
+    if points:
+        sid=points[-1].get('customdata')
+        if isinstance(sid,str) and sid in road_ids: st.session_state['road_segment']=sid
+
+control,map_button=st.columns([3,1])
+with control:
+    seg=st.selectbox('도로 구간 (전체 화면 공통)',road_ids,key='road_segment')
+with map_button:
+    with st.popover('🗺 도로 구간 지도',use_container_width=True):
+        st.markdown('### 도로 구간 위치 · 가상 지도')
+        st.caption('실제 지리 좌표가 아닌 기능 테스트용 지도 · '+str(len(road_ids))+'개 구간')
+        focus=st.toggle('선택 구간 자동 확대',value=True,key='road_map_focus')
+        st.plotly_chart(map_figure(seg,focus),key='road_map_chart',on_select=map_pick,selection_mode='points',use_container_width=True,config={'scrollZoom':True,'displaylogo':False})
+        st.caption('도로 중앙의 점을 클릭하면 구간 선택 · 드래그 이동 · 휠 확대/축소 · 팝업 밖 클릭으로 닫기')
+        st.caption('🟢 관찰 (30 미만) · 🟡 주의 (30–60 미만) · 🟠 우선 점검 (60–80 미만) · 🔴 즉시 점검 권고 (80 이상)')
+        selected_row=ranks.loc[ranks.segment_id.astype(str)==seg].iloc[0]
+        st.write(f'**{seg}** · {selected_row.grade} · Risk {selected_row.risk_score:.1f}/100 · 순위 {int(selected_row["rank"])} / {len(road_ids)}')
+row=ranks.loc[ranks.segment_id.astype(str)==seg].iloc[0]
+# Video summary must retain the actual registered video's segment, not map browsing selection.
+video_seg=str(rec.get('segment','')) if rec else ''
+video_rows=ranks.loc[ranks.segment_id.astype(str)==video_seg]
+video_risk=f'{video_rows.iloc[0].risk_score:.1f}' if not video_rows.empty else '—'
 
 if page=='영상 분석':
     main,side=st.columns([2.15,1],gap='small')
     with main:
         st.markdown('### 원본 영상 / AI 분석 영상')
     if rec:
-        with main:st.caption(display_name(rec)+' · '+status_label(rec))
+        with main:st.caption(display_name(rec)+' · '+status_label(rec)+' · 등록 구간 '+video_seg)
     left=right=None
     if chosen:
         try:left=read('runs/'+chosen+'/original.mp4')
@@ -268,7 +324,7 @@ if page=='영상 분석':
         if part=='summary':
             for col,(label,value) in zip(st.columns(2),[('누적 탐지 이벤트',summary.get('cumulative_detection_events','—')),('고유 Track',summary.get('current_cycle_unique_count','—'))]):col.metric(label,value)
             for col,(label,value) in zip(st.columns(2),[('평균 Confidence',fmt(conf.mean())),('최대 Confidence',fmt(conf.max()))]):col.metric(label,value)
-            for col,(label,value) in zip(st.columns(3),[('평균 Relative Area',fmt(area.mean())),('최대 Relative Area',fmt(area.max())),('Risk Score · 가상 데이터',f'{row.risk_score:.1f}')]):col.metric(label,value)
+            for col,(label,value) in zip(st.columns(3),[('평균 Relative Area',fmt(area.mean())),('최대 Relative Area',fmt(area.max())),('Risk Score · 영상 등록 구간',video_risk)]):col.metric(label,value)
             if 'class_name' in d and not d.empty:
                 counts=d['class_name'].astype(str).value_counts().rename_axis('손상 유형').reset_index(name='Track')
                 plot(px.pie(counts,names='손상 유형',values='Track',hole=.65,title='위험요소 비율'))
@@ -307,16 +363,16 @@ if page=='영상 분석':
             try:st.download_button(label,read(work+'/'+name),name)
             except Exception:st.caption(label+' 미수신')
 if page=='도로 위험도·우선순위':
-    st.subheader('30개 도로구간 위험도 및 유지관리 우선순위')
+    st.subheader(f'{len(road_ids)}개 도로구간 위험도 및 유지관리 우선순위')
     st.warning('연습용 가상 데이터 · 실제 탐지 결과와 합산하지 않음')
     a,b,c,d=st.columns(4)
-    for col,label,val in [(a,'Risk Score',f'{row.risk_score:.1f}/100'),(b,'위험등급',row.grade),(c,'현재 순위',f'{int(row["rank"])}/30'),(d,'포트홀 수 (시뮬레이션)',int(row.pothole_count))]:col.metric(label,val)
+    for col,label,val in [(a,'Risk Score',f'{row.risk_score:.1f}/100'),(b,'위험등급',row.grade),(c,'현재 순위',f'{int(row["rank"])}/{len(road_ids)}'),(d,'포트홀 수 (시뮬레이션)',int(row.pothole_count))]:col.metric(label,val)
     advice={'관찰':'정기 모니터링','주의':'현장 상태 점검','우선 점검':'단기간 내 현장점검과 보수 검토','즉시 점검 권고':'우선 현장확인과 신속한 보수 검토'}
     st.info(f'{seg} 유지관리 권고: {advice[row.grade]}')
     a,b=st.columns([2,1])
     with a:st.dataframe(ranks[['rank','segment_id','risk_score','grade','pothole_count','recurrence_count','traffic_volume','road_age_year']],use_container_width=True,hide_index=True)
     with b:plot(px.bar(ranks.head(5).sort_values('risk_score'),x='risk_score',y='segment_id',orientation='h',title='위험도 Top 5'))
-    download('30개 구간 순위 CSV',ranks,'segment_ranking.csv')
+    download('전체 구간 순위 CSV',ranks,'segment_ranking.csv')
     source_tag('simulation.csv · 프로젝트용 위험도 지표 (공인 안전등급 아님)')
 if page=='월별 변화·보수효과':
     st.subheader('월별 변화 및 보수효과')
