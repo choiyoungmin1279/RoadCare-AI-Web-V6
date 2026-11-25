@@ -8,7 +8,7 @@ from risk_ml import ranking, insights, forecast, grade
 from cloud_link import settings,get,put,original_created_at
 
 ROOT=Path(__file__).resolve().parent
-st.set_page_config(page_title='RoadCare AI | Web V13',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
+st.set_page_config(page_title='RoadCare AI | Web V14',page_icon='🛣️',layout='wide',initial_sidebar_state='expanded')
 st.markdown("""<style>
 .stApp{background:#eaf3f9;color:#102b43}.block-container{max-width:1900px;padding:1.4rem 1.5rem 2rem}.hero{background:linear-gradient(100deg,#f7fbff 0%,#e3f2f8 42%,#123e54 100%);color:#102b43;padding:18px 22px;border-radius:12px;display:flex;align-items:center;gap:20px;min-height:92px;overflow:hidden}.hero h1{color:#102b43!important;font-size:34px;margin:0;padding:0}.hero em{color:#087f87;font-style:normal}.hero span{color:#284b63;font-weight:600}.hero img{width:32%;height:76px;object-fit:cover;border-radius:8px;margin-left:auto}.hero .tag{color:white;font-size:12px;white-space:nowrap}h1,h2,h3{color:#102b43}[data-testid=stHeader]{background:transparent}[data-testid=stSidebar]{background:linear-gradient(155deg,#102b43,#0b354b 75%,#07556a);min-width:235px}[data-testid=stSidebar] *{color:#f0f8ff!important}[data-testid=stSidebar] [data-testid=stRadio] label{padding:12px 9px;border-radius:8px;cursor:pointer}[data-testid=stSidebar] [data-testid=stRadio] label:has(input:checked){background:#087eae}[data-testid=stSidebar] [data-testid=stRadio] [role=radiogroup]{gap:8px}[data-testid=stSidebar] button{background:#16475d;border-color:#42687b}[data-testid=stVerticalBlockBorderWrapper]{border:1px solid #d5e5ef!important;border-radius:13px!important;background:#fafdff;box-shadow:0 3px 10px #123e5410}[data-testid=stMetric]{background:#eaf3f9;border:1px solid #d8e6ef;border-radius:9px;padding:10px}[data-testid=stMetricValue]{color:#102b43;font-size:24px}[data-testid=stMetricLabel]{font-size:12px}.stButton button,.stDownloadButton button{border-radius:8px}button[kind=primary]{background:#087da7!important;border-color:#087da7!important;color:white!important}.listhead{background:#dcecf5;padding:7px;border-radius:6px;font-weight:700;font-size:12px}.status{font-size:12px;font-weight:700;padding:4px 7px;border-radius:12px;display:inline-block;white-space:normal}.stCaption{color:#52657c}.section-title{font-size:25px;font-weight:800;color:#102b43;margin:8px 0}.section-title small{font-size:13px;font-weight:400;color:#52657c;margin-left:12px}@media(max-width:700px){.hero{display:block;padding:12px}.hero h1{font-size:25px}.hero img,.hero .tag{display:none}.block-container{padding:1rem!important}}
 </style>""",unsafe_allow_html=True)
@@ -21,7 +21,7 @@ def source_tag(label):st.caption('데이터 출처: '+label)
 def video_data(upload,path):
     if upload is None:return (ROOT/path).read_bytes()
     return upload.getvalue()
-def player_html(left, right, mode="자동", detections=None):
+def player_html(left, right, mode="자동", detections=None, ready=False):
     """Show entire source frames (portrait or landscape) without cropping."""
     def uri(data):
         return 'data:video/mp4;base64,' + base64.b64encode(data).decode('ascii') if data else ''
@@ -49,19 +49,19 @@ def player_html(left, right, mode="자동", detections=None):
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#17324D;background:transparent}
 .video-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
 .video-panel{min-width:0}.video-panel b{display:block;margin:0;padding:10px 12px;background:#34576b;color:white;border-radius:8px 8px 0 0}.video-panel:nth-child(2) b{background:#087f91}
-video{display:block;width:100%;aspect-ratio:16/9;height:auto;max-height:78vh;object-fit:contain;background:#101820;border-radius:0 0 8px 8px}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 6px}
+video{display:block;width:100%;aspect-ratio:16/9;height:auto;max-height:300px;object-fit:contain;background:#101820;border-radius:0 0 8px 8px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0 6px}.mini-progress{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:#34576b}.mini-progress progress{width:85px;height:9px;accent-color:#087f87}
 button{padding:8px 12px;background:#087F87;color:white;border:0;border-radius:7px;cursor:pointer}
 .note{font-size:12px;color:#52657C;line-height:1.5}
-@media(max-width:620px){.video-grid{grid-template-columns:minmax(0,1fr)}video{max-height:72vh}}
+@media(max-width:620px){.video-grid{grid-template-columns:minmax(0,1fr)}video{max-height:220px}}
 .timeline{margin-top:14px;border:1px solid #d5e5ef;border-radius:10px;padding:10px;background:#fafdff}.timeline-head{display:flex;justify-content:space-between;gap:8px;font-weight:bold;font-size:14px}.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}.chart{min-width:0;border:1px solid #e1eaf0;border-radius:7px;padding:6px}.chart strong{font-size:12px}.chart svg{display:block;width:100%;height:110px}.timeline .note{margin-top:5px}@media(max-width:620px){.charts{grid-template-columns:1fr}} 
 __MODE_CSS__</style></head><body>
 <div class="video-grid">
  <div class="video-panel"><b>원본 영상</b><video id="a" controls autoplay loop muted playsinline preload="metadata" src="__LEFT__"></video></div>
  <div class="video-panel"><b>AI 분석 영상</b><video id="b" controls autoplay loop muted playsinline preload="metadata" src="__RIGHT__"></video><div id="pending" class="note"></div></div>
 </div>
-<div class="actions"><button onclick="playBoth()">▶ 동시 재생</button><button onclick="pauseBoth()">⏸ 일시정지</button><button onclick="restartBoth()">↺ 처음부터</button></div>
-<div class="note">9:16 세로 영상과 16:9 가로 영상을 원본 비율로 표시합니다. 서로 다른 비율도 각각 유지하며, 브라우저 자동재생 정책에 따라 재생 버튼이 필요할 수 있습니다.</div>
+<div class="actions"><button onclick="playBoth()">▶ 동시 재생</button><button onclick="pauseBoth()">⏸ 일시정지</button><button onclick="restartBoth()">↺ 처음부터</button><div class="mini-progress">__PROGRESS__</div></div>
+
 <section class="timeline"><div class="timeline-head"><span>영상 재생 연동 그래프</span><span id="clock">00:00</span></div><div class="charts" id="charts"></div><div class="note" id="chartnote">Track 최초 탐지 시간 기준 · Confidence / Relative Area는 Track별 최대값의 누적 평균 (프레임별 실측 변화 아님)</div></section>
 <script>
 const rows=__ROWS__;
@@ -89,19 +89,14 @@ function draw(){const t=available(master)?master.currentTime:0;const dur=Number.
 }
 for(const event of ['timeupdate','seeked','loadedmetadata','ended','pause'])master.addEventListener(event,draw);
 function tick(){if(!master.paused){align();draw();}requestAnimationFrame(tick);}draw();requestAnimationFrame(tick);
-function fitFrame(){
-  const h=Math.ceil(document.documentElement.scrollHeight+8);
-  window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setFrameHeight',height:h},'*');
-}
-for(const v of [a,b]){for(const event of ['loadedmetadata','loadeddata','resize','error'])v.addEventListener(event,fitFrame)}
-window.addEventListener('resize',fitFrame);
-new ResizeObserver(fitFrame).observe(document.body);
-fitFrame();
 </script></body></html>
 """
-    html = html.replace('__ROWS__', payload).replace('__LEFT__', uri(left)).replace('__RIGHT__', uri(right)).replace('__MODE_CSS__', '.video-grid{grid-template-columns:1fr}' if mode=='모바일' else '.video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}' if mode=='PC' else '')
+    html = html.replace('__PROGRESS__', '분석 진행률 <progress value="100" max="100"></progress> 100%' if ready else '분석 진행률: 우측 분석 요약에서 실시간 확인').replace('__ROWS__', payload).replace('__LEFT__', uri(left)).replace('__RIGHT__', uri(right)).replace('__MODE_CSS__', '.video-grid{grid-template-columns:1fr}video{max-height:220px}.charts{grid-template-columns:1fr}' if mode=='모바일' else '.video-grid{grid-template-columns:repeat(2,minmax(0,1fr))}' if mode=='PC' else '')
     import streamlit.components.v1 as components
-    components.html(html, height=420, scrolling=False)
+    # Explicit height prevents clipping; scrolling is a fallback on narrow screens.
+    if mode=='자동':
+        st.markdown('<style>@media(max-width:900px){iframe[title="st.iframe"]{height:1120px!important}}</style>',unsafe_allow_html=True)
+    components.html(html, height=1120 if mode=='모바일' else 610, scrolling=True)
 
 @st.cache_data(ttl=45,max_entries=12,show_spinner=False)
 def fetch(path,scope):return get(path)
@@ -110,7 +105,7 @@ def obj(path):return json.loads(read(path))
 slots=['model_1','model_2','model_3']
 infos=json.loads((ROOT/'data/model_info.json').read_text(encoding='utf8'))
 header_img=base64.b64encode((ROOT/'data/header_road.jpg').read_bytes()).decode('ascii')
-st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V13</div></div>',unsafe_allow_html=True)
+st.markdown(f'<div class="hero"><div><h1>🛣 RoadCare <em>AI</em></h1><span>AI 도로 상태 분석 및 유지관리 플랫폼</span></div><img src="data:image/jpeg;base64,{header_img}" alt="도로"><div class="tag">클라우드 데이터 수신 · Web V14</div></div>',unsafe_allow_html=True)
 from datetime import datetime, timezone
 @st.fragment(run_every=2)
 def catalog_watch():
@@ -241,7 +236,7 @@ if page=='영상 분석':
             try:right=read(work+'/result.mp4')
             except Exception:st.caption('분석 영상 수신 대기')
     with main:
-        with st.container(border=True):player_html(left,right,mode,detections)
+        with st.container(border=True):player_html(left,right,mode,detections,ready)
     if not chosen:
         with main:st.info('로컬에서 전송된 영상이 없습니다.')
     @st.fragment(run_every=2)
@@ -263,8 +258,8 @@ if page=='영상 분석':
         st.caption(status+' · '+infos[model_id]['model_name'])
         if data is None:
             st.info('선택한 영상과 모델의 분석 데이터가 아직 없습니다.');return
-        if data.get('progress') is not None: st.progress(max(0.,min(1.,float(data['progress']))))
-        elif ready: st.progress(1.)
+        if data.get('progress') is not None: st.progress(max(0.,min(1.,float(data['progress']))),text='분석 진행률')
+        elif ready: st.progress(1.,text='분석 진행률 · 100%')
         st.caption('수신 확인: '+datetime.now(timezone.utc).astimezone(__import__('zoneinfo').ZoneInfo('Asia/Seoul')).strftime('%H:%M:%S')+' · 2초 주기 조회 (전송 지연 가능)')
         st.caption('실제 모델 데이터 · '+str(data.get('data_type','')))
         d=pd.DataFrame(data.get('detections',[])); summary=data.get('summary',{})
@@ -292,7 +287,6 @@ if page=='영상 분석':
         with st.expander('탐지 상세 데이터'):st.dataframe(d,use_container_width=True)
     with side:
         with st.container(border=True):live_panel("summary")
-    with st.container(border=True):live_panel("progress")
     with st.container(border=True):live_panel("charts")
     bottom,details=st.columns([3,1],gap='small')
     with bottom:
